@@ -67,4 +67,58 @@
     去掉了很多⽀持 |Portlet 过时了、Velocity 不维护了、 JasperReport 不流⾏了 |库有千千万，我该怎么选？ 
 
 - Spring Boot 和 Spring Cloud 的出现是必然的 
-- 
+  - 过去
+  
+    ![sping boot & cloud 出现的必然性](images/spring-family-06.png)
+
+  - 现在
+
+    ![sping boot & cloud 出现的必然性](images/spring-family-07.png)
+
+  - 将来
+
+    ![sping boot & cloud 出现的必然性](images/spring-family-08.png)
+
+  - 从中可以领悟的点
+  
+    - 开箱即⽤ 
+    - 与⽣态圈的深度整合 
+    - 注重运维 
+    - Cloud Native的⼤⽅向 
+    - 最佳实践不嫌多，固化到系统实现中才是王道 
+    - …… 
+
+-----------------
+
+## 你的第⼀个 Spring 程序 
+
+- Hello Spring 
+  - 通过 Spring Initializr ⽣成⻣架 
+  - 编写第⼀段代码 
+  - 运⾏你的程序 
+  - 分析项⽬结构 
+  
+  ![Spring Initializr](images/spring-family-09.png)
+
+- 项⽬结构 
+
+    ![项目结构](images/spring-family-10.png)
+
+- ⾃动⽣成的 Maven ⼯程 
+
+  - pom.xml 
+  - 包含 main ⽅法的 Java 程序 
+  - 测试类 
+  - 配置⽂件 
+
+- pom.xml ⽂件解读 
+
+    ![pom.xml](images/spring-family-11.png)
+    ![pom.xml](images/spring-family-12.png)
+
+  - ⽅便快捷 
+  - ⾃动引⼊ spring-boot-dependencies 
+  - ⾃动配置 spring-boot-maven-plugin 
+
+-------------------------------
+
