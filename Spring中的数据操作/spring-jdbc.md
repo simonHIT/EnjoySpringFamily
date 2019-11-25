@@ -138,3 +138,100 @@
   ![运行结果](images/spring-jdbc-03.png)
   
 ## 多数据源的配置注意事项
+
+- 注意事项
+  - 不同数据源的配置要分开 
+  
+  - 关注每次使⽤的数据源 
+  
+    - 有多个DataSource时系统如何判断，需要及时判断当前数据库操作使用的是哪个数据源
+    - 对应的设施（事务、ORM等）如何选择DataSource ，当前事务、设施（mybatis、h2)等使用哪个数据源，需要格外小心
+
+- 解决措施
+
+- ⼿⼯配置两组 DataSource 及相关内容，与Spring Boot协同⼯作（两组datasource只能两者选其一）
+   
+  - 配置@Primary类型的Bean 
+  - 排除Spring Boot的⾃动配置 
+    - DataSourceAutoConﬁguration 
+    - DataSourceTransactionManagerAutoConﬁguration 
+    - JdbcTemplateAutoConﬁguration 
+
+---
+- 参考示例
+  - application.properties
+
+  ```yml
+  management.endpoints.web.exposure.include=*
+  spring.output.ansi.enabled=ALWAYS
+
+  foo.datasource.url=jdbc:h2:mem:foo
+  foo.datasource.username=sa
+  foo.datasource.password=
+
+  bar.datasource.url=jdbc:h2:mem:bar
+  bar.datasource.username=sa
+  bar.datasource.password=
+  ```
+  - 主启动类
+  
+  ```java
+  @SpringBootApplication(exclude = {
+        DataSourceAutoConfiguration.class,
+        DataSourceTransactionManagerAutoConfiguration.class,
+        JdbcTemplateAutoConfiguration.class
+  })
+  @Slf4j
+  public class MultiDatasourceDemoApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(MultiDatasourceDemoApplication.class, args);
+    }
+
+    @Bean
+    @ConfigurationProperties("foo.datasource")
+    public DataSourceProperties fooDataSourceProperties(){
+        return new DataSourceProperties();
+    }
+
+    @Bean
+    public DataSource fooDataSource(){
+        DataSourceProperties dataSourceProperties= fooDataSourceProperties();
+        log.info("foo datasource:{}",dataSourceProperties.getUrl());
+        return dataSourceProperties.initializeDataSourceBuilder().build();
+    }
+
+    @Bean
+    public PlatformTransactionManager fooTxManager(DataSource fooDataSource){
+
+        return new DataSourceTransactionManager(fooDataSource);
+    }
+
+    @Bean
+    @ConfigurationProperties("bar.datasource")
+    public DataSourceProperties barDataSourceProperties(){
+        return new DataSourceProperties();
+    }
+
+    @Bean
+    public DataSource barDataSource(){
+        DataSourceProperties dataSourceProperties=barDataSourceProperties();
+        log.info("bar datasource:{}",dataSourceProperties.getUrl());
+        return dataSourceProperties.initializeDataSourceBuilder().build();
+    }
+
+    @Bean
+    public PlatformTransactionManager barTxManager(DataSource barDataSource){
+        return new DataSourceTransactionManager(barDataSource);
+    }
+
+  }
+
+  ```
+
+- 运行结果
+  
+  - 可以看到springboot为我们生成了两组datasource，调用哪一组取决于我们的业务
+  
+---
+
