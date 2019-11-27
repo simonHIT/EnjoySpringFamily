@@ -149,10 +149,10 @@
 
 - 解决措施
 
-- ⼿⼯配置两组 DataSource 及相关内容，与Spring Boot协同⼯作（两组datasource只能两者选其一）
-   
-  - 配置@Primary类型的Bean 
-  - 排除Spring Boot的⾃动配置 
+- ⼿⼯配置两组 DataSource 及相关内容，（两组datasource只能两者选其一）
+- 与Spring Boot协同⼯作
+  - 配置@Primary类型的Bean (其中某个数据源为主要的数据源)
+  - 排除Spring Boot的⾃动配置(多个数据源同样重要，不希望有主次之分)
     - DataSourceAutoConﬁguration 
     - DataSourceTransactionManagerAutoConﬁguration 
     - JdbcTemplateAutoConﬁguration 
@@ -233,5 +233,187 @@
   
   - 可以看到springboot为我们生成了两组datasource，调用哪一组取决于我们的业务
   
+  ![运行结果](images/spring-jdbc-04.png)
+  
 ---
 
+## 有哪些好用的数据源
+
+- HikariCP
+  - 首页
+  
+    ![HikariCP](images/spring-jdbc-05.png)
+  - HikariCP 为什么快 
+  
+    1. 字节码级别优化（很多⽅法通过 JavaAssist ⽣成） 
+    2. ⼤量⼩改进 
+        - ⽤ FastStatementList 代替 ArrayList 
+        - ⽆锁集合 ConcurrentBag 
+        - 代理类的优化（⽐如，⽤ invokestatic 代替了 invokevirtual） 
+  - 在 Spring Boot 中的配置 
+    - Spring Boot 2.x 
+      - 默认使⽤ HikariCP 
+      - 配置 spring.datasource.hikari.* 配置 
+    - Spring Boot 1.x 
+      - 默认使⽤ Tomcat 连接池，需要移除 tomcat-jdbc 依赖 
+      - spring.datasource.type=com.zaxxer.hikari.HikariDataSource 
+
+- 常⽤ HikariCP 配置参数 
+  - 常⽤配置 
+    - spring.datasource.hikari.maximumPoolSize=10 
+    - spring.datasource.hikari.minimumIdle=10 
+    - spring.datasource.hikari.idleTimeout=600000 
+    - spring.datasource.hikari.connectionTimeout=30000 
+    - spring.datasource.hikari.maxLifetime=1800000 
+  - 其他配置详⻅ HikariCP 官⽹ 
+    - https://github.com/brettwooldridge/HikariCP 
+
+- Alibaba Druid
+
+  - Alibaba Druid 官⽅介绍 
+    - “Druid连接池是阿⾥巴巴开源的数据库连接池项⽬。Druid连接池为监控⽽⽣，内置强⼤的监控功能，监控特性不影响性能。功能强⼤，能防SQL注⼊，内置 Logging能诊断Hack应⽤⾏为。” 
+
+  - Druid 
+    - 经过阿⾥巴巴各⼤系统的考验，值得信赖 实⽤的功能 
+    - 详细的监控（真的是全⾯） 
+      - ExceptionSorter，针对主流数据库的返回码都有⽀持 
+      - SQL 防注⼊ 
+      - 内置加密配置 
+      - 众多扩展点，⽅便进⾏定制 
+
+  - 数据源配置 (配合方式)
+    - 直接配置 DruidDataSource 
+    - 通过 druid-spring-boot-starter 
+      - spring.datasource.druid.* 
+  
+  ```yml
+  spring.output.ansi.enabled=ALWAYS
+
+  spring.datasource.url=jdbc:h2:mem:foo
+  spring.datasource.username=sa
+  spring.datasource.password=n/z7PyA5cvcXvs8px8FVmBVpaRyNsvJb3X7YfS38DJrIg25EbZaZGvH4aHcnc97Om0islpCAPc3MqsGvsrxVJw==
+
+  spring.datasource.druid.initial-size=5
+  spring.datasource.druid.max-active=5
+  spring.datasource.druid.min-idle=5
+  spring.datasource.druid.filters=conn,config,stat,slf4j
+
+  spring.datasource.druid.connection-properties=config.decrypt=true;config.decrypt.key=${public-key}
+  spring.datasource.druid.filter.config.enabled=true
+
+  spring.datasource.druid.test-on-borrow=true
+  spring.datasource.druid.test-on-return=true
+  spring.datasource.druid.test-while-idle=true
+
+  public-key=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBALS8ng1XvgHrdOgm4pxrnUdt3sXtu/E8My9KzX8sXlz+mXRZQCop7NVQLne25pXHtZoDYuMh3bzoGj6v5HvvAQ8CAwEAAQ==
+  ```
+
+  - 数据源配置常用配置
+    - Filter 配置 
+      - spring.datasource.druid.ﬁlters=stat,conﬁg,wall,log4j  （全部使⽤默认值） 
+    - 密码加密 
+      - spring.datasource.password=<加密密码> 
+      - spring.datasource.druid.ﬁlter.conﬁg.enabled=true 
+      - spring.datasource.druid.connection-properties=conﬁg.decrypt=true;conﬁg.decrypt.key=<public-key> 
+    - SQL 防注⼊ 
+      - spring.datasource.druid.ﬁlter.wall.enabled=true 
+      - spring.datasource.druid.ﬁlter.wall.db-type=h2 
+      - spring.datasource.druid.ﬁlter.wall.conﬁg.delete-allow=false 
+      - spring.datasource.druid.ﬁlter.wall.conﬁg.drop-table-allow=false 
+
+  - Druid Filter 
+    - ⽤于定制连接池操作的各种环节 
+    - 可以继承 FilterEventAdapter 以便⽅便地实现 Filter 
+    - 修改 META-INF/druid-ﬁlter.properties 增加 Filter 配置 
+  ---
+  - application.properties
+  
+  ```yml
+  spring.output.ansi.enabled=ALWAYS
+
+  spring.datasource.url=jdbc:h2:mem:foo
+  spring.datasource.username=sa
+  spring.datasource.password=n/z7PyA5cvcXvs8px8FVmBVpaRyNsvJb3X7YfS38DJrIg25EbZaZGvH4aHcnc97Om0islpCAPc3MqsGvsrxVJw==
+
+  spring.datasource.druid.initial-size=5
+  spring.datasource.druid.max-active=5
+  spring.datasource.druid.min-idle=5
+  spring.datasource.druid.filters=conn,config,stat,slf4j
+
+  spring.datasource.druid.connection-properties=config.decrypt=true;config.decrypt.key=${public-key}
+  spring.datasource.druid.filter.config.enabled=true
+
+  spring.datasource.druid.test-on-borrow=true
+  spring.datasource.druid.test-on-return=true
+  spring.datasource.druid.test-while-idle=true
+
+  public-key=MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBALS8ng1XvgHrdOgm4pxrnUdt3sXtu/E8My9KzX8sXlz+mXRZQCop7NVQLne25pXHtZoDYuMh3bzoGj6v5HvvAQ8CAwEAAQ==
+
+  ```
+
+  - druid-filter.properties
+  
+  ```yml
+  druid.filters.conn=com.simon.druiddemo.ConnectionLogFilter
+  ```
+
+  - ConnectionDemoFilter.java
+
+  ```java
+  @Slf4j
+  public class ConnectionLogFilter extends FilterEventAdapter {
+
+    @Override
+    public void connection_connectBefore(FilterChain chain, Properties info) {
+        super.connection_connectBefore(chain, info);
+        log.info("CONNECTION BEFORE!");
+    }
+
+    @Override
+    public void connection_connectAfter(ConnectionProxy connection) {
+        super.connection_connectAfter(connection);
+        log.info("CONNECTION AFTER!");
+    }
+  }
+
+  ```
+
+  - 运行结果
+
+    ![运行结果](images/spring-jdbc-07.png)
+    ![运行结果](images/spring-jdbc-08.png)
+  ---
+
+## 连接池选择时的考量点 
+
+![连接池选择时的考量点](images/spring-jdbc-06.png)
+
+
+## 通过 Spring JDBC 访问数据库 
+
+- Spring 的 JDBC 操作类 
+  - spring-jdbc 
+    - core，JdbcTemplate 等相关核⼼接⼝和类 
+    - datasource，数据源相关的辅助类 
+    - object，将基本的 JDBC 操作封装成对象 
+    - support，错误码等其他辅助⼯具 
+
+- 常⽤的 Bean 注解 
+  - 通过注解定义 Bean 
+    - @Component 
+    - @Repository 
+    - @Service 
+    - @Controller 
+    - @RestController 
+
+- 简单的 JDBC 操作 
+  - JdbcTemplate 
+    - query 
+    - queryForObject 
+    - queryForList 
+    - update 
+    - execute 
+
+---
+- 代码示例
+---
