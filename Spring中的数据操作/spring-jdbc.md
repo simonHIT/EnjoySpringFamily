@@ -392,7 +392,7 @@
 ## 通过 Spring JDBC 访问数据库 
 
 - Spring 的 JDBC 操作类 
-  - spring-jdbc 
+  - spring-jdbc 有四部分组成
     - core，JdbcTemplate 等相关核⼼接⼝和类 
     - datasource，数据源相关的辅助类 
     - object，将基本的 JDBC 操作封装成对象 
@@ -400,11 +400,11 @@
 
 - 常⽤的 Bean 注解 
   - 通过注解定义 Bean 
-    - @Component 
-    - @Repository 
-    - @Service 
-    - @Controller 
-    - @RestController 
+    - @Component 通用的bean
+    - @Repository 数据库相关的bean放在数据库仓库中
+    - @Service 业务服务层的相关的bean
+    - @Controller springMVC使用
+    - @RestController springMVC使用
 
 - 简单的 JDBC 操作 
   - JdbcTemplate 
@@ -417,6 +417,215 @@
 ---
 
 - 代码示例
+- Foo.java
+  
+  ```java
+  @Data
+  @Builder
+  public class Foo {
 
+    private Long id;
+
+    private String bar;
+  }
+  ```
+
+- FooDao.java
+
+  ```java
+
+  @Slf4j
+  @Repository
+  public class FooDao {
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private SimpleJdbcInsert simpleJdbcInsert;
+
+    public void insertData() {
+        Arrays.asList("b", "c").forEach(bar -> {
+            jdbcTemplate.update("INSERT INTO FOO (BAR) VALUES (?)", bar);
+        });
+
+        HashMap<String, Object> row = new HashMap<>();
+        row.put("BAR", "d");
+        Number id = simpleJdbcInsert.executeAndReturnKey(row);
+        log.info("ID of d: {}", id.longValue());
+    }
+
+    public void listData() {
+
+        log.info("Count : {}", jdbcTemplate.queryForObject("SELECT COUNT(*) FROM FOO", Long.class));
+
+        /**
+         * queryForList
+         */
+        List<String> list = jdbcTemplate.queryForList("SELECT BAR FROM FOO", String.class);
+
+        list.forEach(s -> log.info("Bar: {}", s));
+
+        /**
+         * query
+         */
+        List<Foo> listFoo = jdbcTemplate.query("SELECT * FROM FOO", new RowMapper<Foo>() {
+            @Override
+            public Foo mapRow(ResultSet resultSet, int i) throws SQLException {
+                return Foo.builder()
+                        .id(resultSet.getLong(1))
+                        .bar(resultSet.getString(2))
+                        .build();
+            }
+        });
+
+        listFoo.forEach(s -> log.info("Foo: {}", s));
+
+    }
+  }
+  ```
+
+- Application.java
+
+  ```java
+  @Slf4j
+  @SpringBootApplication
+  public class SimpleJdbcDemoApplication implements CommandLineRunner {
+
+      @Autowired
+      private FooDao fooDao;
+
+      public static void main(String[] args) {
+          SpringApplication.run(SimpleJdbcDemoApplication.class, args);
+      }
+
+      @Bean
+      @Autowired
+      public SimpleJdbcInsert SimpleJdbcInsert(JdbcTemplate jdbcTemplate) {
+
+          return new SimpleJdbcInsert(jdbcTemplate)
+                  .withTableName("FOO").usingGeneratedKeyColumns("ID");
+      }
+
+      @Override
+      public void run(String... args) throws Exception {
+
+          fooDao.insertData();
+
+          fooDao.listData();
+      }
+  }
+  ```
+
+- 运行结果
+
+  ![运行结果](images/spring-jdbc-09.png)
 
 ---
+
+- SQL 批处理 (两种实现方式)
+  - 使用JdbcTemplate 
+    - batchUpdate 
+    - BatchPreparedStatementSetter 
+  - 使用NamedParameterJdbcTemplate 
+    - batchUpdate 
+    - SqlParameterSourceUtils.createBatch 
+
+---
+
+- 代码示例
+
+- BatchFooDao.java
+
+  ```java
+  @Slf4j
+  @Repository
+  public class BatchFooDao {
+
+      @Autowired
+      private JdbcTemplate jdbcTemplate;
+
+      @Autowired
+      private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+
+      public void batchInsert() {
+
+          /**
+          * 方式一：batchUpdate
+          */
+          jdbcTemplate.batchUpdate("INSERT  INTO FOO(BAR) VALUES (?)",
+                  new BatchPreparedStatementSetter() {
+                      @Override
+                      public void setValues(PreparedStatement preparedStatement, int i) throws SQLException {
+                          preparedStatement.setString(1, "b-" + i);
+                      }
+
+                      @Override
+                      public int getBatchSize() {
+                          return 2;
+                      }
+                  });
+
+          /**
+          * 方式二：NamedParameterJdbcTemplate
+          */
+          ArrayList<Foo> foos = new ArrayList<>();
+
+          foos.add(Foo.builder().id(100L).bar("b-100").build());
+          foos.add(Foo.builder().id(101L).bar("b-101").build());
+
+          namedParameterJdbcTemplate
+                  .batchUpdate("INSERT  INTO FOO(ID,BAR) VALUES (:id,:bar)",
+                          SqlParameterSourceUtils.createBatch(foos));
+      }
+  }
+  ```
+
+- Application.java
+
+  ```java
+  @Slf4j
+  @SpringBootApplication
+  public class SimpleJdbcDemoApplication implements CommandLineRunner {
+
+      @Autowired
+      private FooDao fooDao;
+
+      @Autowired
+      private BatchFooDao batchFooDao;
+
+      public static void main(String[] args) {
+          SpringApplication.run(SimpleJdbcDemoApplication.class, args);
+      }
+
+      @Bean
+      @Autowired
+      public SimpleJdbcInsert SimpleJdbcInsert(JdbcTemplate jdbcTemplate) {
+
+          return new SimpleJdbcInsert(jdbcTemplate)
+                  .withTableName("FOO").usingGeneratedKeyColumns("ID");
+      }
+
+      @Override
+      public void run(String... args) throws Exception {
+
+          fooDao.insertData();
+
+          batchFooDao.batchInsert();
+
+          fooDao.listData();
+      }
+  }
+  ```
+
+- 运行结果
+
+![运行结果](images/spring-jdbc-10.png)
+
+---
+
+## 了解 Spring 的抽象 
+
+- 事务抽象 
+
+
+- JDBC 异常抽象 
