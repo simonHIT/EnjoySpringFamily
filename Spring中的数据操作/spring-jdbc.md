@@ -627,5 +627,90 @@
 
 - 事务抽象 
 
+  - Spring提供了⼀致的事务模型 
+    - 无论使用哪种驱动：JDBC/Hibernate/myBatis 
+    - 无论使用哪种数据源：DataSource/JTA 
+
+  - 事务抽象的核⼼接⼝ 
+    - PlatformTransactionManager 
+      - DataSourceTransactionManager （默认事务模型）
+      - HibernateTransactionManager （Hibernate事务模型）
+      - JtaTransactionManager （JTA事务模型）
+
+    - TransactionDeﬁnition （事务定义）
+      - Propagation （传播特性）
+      - Isolation （隔离特性）
+      - Timeout （超时）
+      - Read-only status （只读特性）
+  
+- Spring事务的传播特性
+
+  传播性|值 |描述 
+  ---|---|---
+  PROPAGATION_REQUIRED|0|当前有事务就⽤当前的，没有就⽤新的 
+  PROPAGATION_SUPPORTS|1|事务可有可⽆，不是必须的 
+  PROPAGATION_MANDATORY|2|当前⼀定要有事务，不然就抛异常 
+  PROPAGATION_REQUIRES_NEW|3|⽆论是否有事务，都起个新的事务 
+  PROPAGATION_NOT_SUPPORTED|4|不⽀持事务，按⾮事务⽅式运⾏ 
+  PROPAGATION_NEVER|5|不⽀持事务，如果有事务则抛异常 
+  PROPAGATION_NESTED|6|当前有事务就在当前事务⾥再起⼀个事务 
+
+- Spring的事务隔离特性
+  
+  隔离性|值|脏读|不可重复度|幻读
+  ---|---|---|---|---
+  ISOLATION_READ_UNCOMMITTED|1|√|√|√
+  ISOLATION_READ_COMMITTED|2|×|√|√ 
+  ISOLATION_REPEATABLE_READ|3|×|×|√ 
+  ISOLATION_SERIALIZABLE|4|×|×|× 
+
+- 编程式事务的实现
+  - TransactionTemplate 的使用
+    - TransactionCallback 接口的实现
+    - TransactionCallbackWithoutResult 接口的实现
+  - PlatformTransactionManager 的使用
+    - 可以传⼊TransactionDeﬁnition进⾏定义 
+
+---
+
+---
+
+- 声明式事务 的实现
+
+  ![声明式事务](images/spring-jdbc-11.png)
+
+  - 基于注解的配置⽅式 
+    - 开启事务注解的⽅式 
+      - @EnableTransactionManagement 
+      - <tx:annotation-driven/> 
+    - ⼀些配置 
+      - proxyTargetClass 
+      - mode 
+      - order 
+  - @Transactional 
+    - transactionManager 
+    - propagation 
+    - isolation 
+    - timeout 
+    - readOnly 
+    - 怎么判断回滚 
+
+---
+---
 
 - JDBC 异常抽象 
+
+- Spring 的 JDBC 异常抽象 
+  - Spring 会将数据操作的异常转换为 DataAccessException 
+  - ⽆论使⽤何种数据访问⽅式，都能使⽤⼀样的异常 
+  - ![spring jdbc 异常](images/spring-jdbc-12.png)
+
+- Spring是怎么认识那些错误码的 
+  
+  - 通过 SQLErrorCodeSQLExceptionTranslator 解析错误码 
+  - ErrorCode 定义 
+    - org/springframework/jdbc/support/sql-error-codes.xml 
+    - Classpath 下的 sql-error-codes.xml 
+
+- 定制错误码解析逻辑 
+- ![定制错误码解析](images/spring-jdbc-13.png)
