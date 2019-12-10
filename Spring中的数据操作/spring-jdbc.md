@@ -672,6 +672,51 @@
     - 可以传⼊TransactionDeﬁnition进⾏定义 
 
 ---
+- application.java
+
+  ```java
+  @Slf4j
+  @SpringBootApplication
+  public class ProgrammatictransactionApplication implements CommandLineRunner {
+
+      @Autowired
+      private TransactionTemplate transactionTemplate;
+
+      @Autowired
+      private JdbcTemplate jdbcTemplate;
+
+      public static void main(String[] args) {
+          SpringApplication.run(ProgrammatictransactionApplication.class, args);
+      }
+
+      @Override
+      public void run(String... args) throws Exception {
+
+          log.info("COUNT BEFORE TRANSACTION: {}",getCount());
+
+          transactionTemplate.execute(new TransactionCallbackWithoutResult() {
+              @Override
+              protected void doInTransactionWithoutResult(TransactionStatus transactionStatus) {
+                  jdbcTemplate.execute("INSERT INTO FOO (ID,BAR) VALUES (1,'AAA')");
+                  log.info("COUNT IN TRANSACTION: {}",getCount());
+                  transactionStatus.setRollbackOnly();
+              }
+          });
+
+          log.info("COUNT AFTER TRANSACTION: {}",getCount());
+      }
+
+      private Long getCount(){
+
+          return (Long) jdbcTemplate.queryForList("SELECT COUNT(*) AS CNT FROM FOO")
+                  .get(0).get("CNT");
+      }
+  }
+  ```
+
+- 运行结果
+
+  ![编程式事务的实现](images/spring-jdbc-14.png)
 
 ---
 
@@ -684,10 +729,10 @@
       - @EnableTransactionManagement 
       - <tx:annotation-driven/> 
     - ⼀些配置 
-      - proxyTargetClass 
+      - proxyTargetClass 面向接口做增强
       - mode 
-      - order 
-  - @Transactional 
+      - order 事务的顺序
+  - @Transactional 注解常用属性
     - transactionManager 
     - propagation 
     - isolation 
@@ -696,6 +741,59 @@
     - 怎么判断回滚 
 
 ---
+
+- application.java
+
+  ```java
+
+  @SpringBootApplication
+  @Slf4j
+  public class DeclarationTransactionDemoApplication implements CommandLineRunner {
+
+      @Autowired
+      private FooService fooService;
+
+      @Autowired
+      private JdbcTemplate jdbcTemplate;
+
+      public static void main(String[] args) {
+          SpringApplication.run(DeclarationTransactionDemoApplication.class, args);
+      }
+
+      @Override
+      public void run(String... args) throws Exception {
+
+          fooService.insertRecord();
+
+          log.info("AAA: {}",jdbcTemplate
+                  .queryForObject("SELECT COUNT(*) FROM FOO WHERE BAR='AAA'",Long.class ));
+
+          try{
+              fooService.insertThenRollback();
+          }catch (Exception e){
+
+              log.info("BBB :{}",
+                      jdbcTemplate
+                              .queryForObject("SELECT COUNT(*) FROM FOO WHERE BAR='BBB'",Long.class));
+          }
+
+          try {
+              fooService.invokeInsertThenRollback();
+          }catch (Exception e){
+
+              log.info("BBB: {}",jdbcTemplate
+                      .queryForObject("SELECT COUNT(*) FROM FOO WHERE BAR='BBB'",Long.class));
+          }
+
+      }
+  }
+
+  ```
+
+- 运行结果
+  
+  ![声明式事务](images/spring-jdbc-15.png)
+
 ---
 
 - JDBC 异常抽象 
