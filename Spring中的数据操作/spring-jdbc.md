@@ -812,3 +812,63 @@
 
 - 定制错误码解析逻辑 
 - ![定制错误码解析](images/spring-jdbc-13.png)
+
+---
+
+- sql-error-codes.xml
+
+  ```xml
+  <?xml version="1.0" encoding="UTF-8"?>
+  <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN 2.0//EN" "http://www.springframework.org/dtd/spring-beans-2.0.dtd">
+
+  <beans>
+
+      <bean id="H2" class="org.springframework.jdbc.support.SQLErrorCodes">
+          <property name="badSqlGrammarCodes">
+              <value>42000,42001,42101,42102,42111,42112,42121,42122,42132</value>
+          </property>
+          <property name="duplicateKeyCodes">
+              <value>23001,23505</value>
+          </property>
+          <property name="dataIntegrityViolationCodes">
+              <value>22001,22003,22012,22018,22025,23000,23002,23003,23502,23503,23506,23507,23513</value>
+          </property>
+          <property name="dataAccessResourceFailureCodes">
+              <value>90046,90100,90117,90121,90126</value>
+          </property>
+          <property name="cannotAcquireLockCodes">
+              <value>50200</value>
+          </property>
+          <property name="customTranslations">
+              <bean class="org.springframework.jdbc.support.CustomSQLErrorCodesTranslation">
+                  <property name="errorCodes" value="23001,23505" />
+                  <property name="exceptionClass"
+                            value="com.simon.errorcodedemo.CustomDuplicateKeyException" />
+              </bean>
+          </property>
+      </bean>
+
+  </beans>
+  ```
+
+- SpringTest.java
+  
+  ```java
+  @RunWith(SpringRunner.class)
+  @SpringBootTest
+  class ErrorcodeDemoApplicationTests {
+
+
+      @Autowired
+      private JdbcTemplate jdbcTemplate;
+
+      @Test(expected = CustomDuplicateKeyException.class)
+
+      public void contextLoads() {
+
+          jdbcTemplate.execute("INSERT INTO FOO (ID,BAR) VALUES (1,'A')");
+          jdbcTemplate.execute("INSERT INTO FOO (ID,BAR) VALUES (1,'B')");
+      }
+  }
+  ```
+---
