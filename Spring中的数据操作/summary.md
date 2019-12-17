@@ -2,4 +2,4 @@
 
 ## [1.JDBC必知必会](spring-jdbc.md)
 
-## [2.OR MAPPING实战]
+## [2.OR MAPPING实战](spring-or-mapping.md)
