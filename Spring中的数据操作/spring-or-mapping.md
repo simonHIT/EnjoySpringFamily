@@ -47,22 +47,27 @@
 - 常⽤ JPA 注解 
 
   - 实体 
-    - @Entity、@MappedSuperclass 
+    - @Entity(标注实体)、@MappedSuperclass(实体共同的父类使用此注解标注) 
     - @Table(name) 
   - 主键 
-    - @Id 
-    - @GeneratedValue(strategy, generator) 
-    - @SequenceGenerator(name, sequenceName) 
+    - @Id (标识ID)
+    - @GeneratedValue(strategy, generator) (标识生成主键，指明生成策略及生成器)
+    - @SequenceGenerator(name, sequenceName) (标识序列化生成器)
+
+    ![实体类定义实例](images/spring-ormapping-07.png)
 
   - 映射 
+  
     - @Column(name, nullable, length, insertable, updatable) 
-    - @JoinTable(name)、@JoinColumn(name) 
+    - @JoinTable(name)、@JoinColumn(name) (关联join时使用)
+  
   - 关系 
     - @OneToOne、@OneToMany、@ManyToOne、@ManyToMany 
     - @OrderBy 
 
 
 - Project Lombok 
+  
   - Project Lombok 能够⾃动嵌⼊ IDE 和构建⼯具，提升开发效率 
   - 常⽤功能 
     - @Getter / @Setter 
@@ -95,5 +100,8 @@
 
 - 实体定义
 
+  ![springbucks项目依赖](images/spring-ormapping-08.png)
+  ![springbucks项目依赖](images/spring-ormapping-09.png)
 
+  
 ---
