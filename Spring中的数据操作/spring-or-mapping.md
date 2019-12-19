@@ -77,7 +77,7 @@
     - @Builder 
     - @Slf4j / @CommonsLog / @Log4j2 
 
----
+
 
 ## 线上咖啡馆实战项⽬-SpringBucks 
 
@@ -104,4 +104,585 @@
   ![springbucks项目依赖](images/spring-ormapping-09.png)
 
   
+---
+
+- 简单的jpa实例-jpa_demo
+
+  - application.yml
+
+  ```yml
+  spring.jpa.hibernate.ddl-auto=create-drop
+  spring.jpa.properties.hibernate.show_sql=true
+  spring.jpa.properties.hibernate.format_sql=true
+  ```
+
+  - pom.xml
+
+  ```xml
+  <dependencies>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-actuator</artifactId>
+          </dependency>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-data-jdbc</artifactId>
+          </dependency>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-data-jpa</artifactId>
+          </dependency>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-web</artifactId>
+          </dependency>
+
+          <dependency>
+              <groupId>org.joda</groupId>
+              <artifactId>joda-money</artifactId>
+              <version>1.0.1</version>
+          </dependency>
+          <dependency>
+              <groupId>org.jadira.usertype</groupId>
+              <artifactId>usertype.core</artifactId>
+              <version>6.0.1.GA</version>
+          </dependency>
+
+          <dependency>
+              <groupId>com.h2database</groupId>
+              <artifactId>h2</artifactId>
+              <scope>runtime</scope>
+          </dependency>
+          <dependency>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <optional>true</optional>
+          </dependency>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-test</artifactId>
+              <scope>test</scope>
+          </dependency>
+      </dependencies>
+  ```
+
+  - Coffee.java
+
+  ```java
+  @Entity
+  @Table(name = "T_MENU")
+  @Data
+  @AllArgsConstructor
+  @NoArgsConstructor
+  @Builder
+  public class Coffee implements Serializable {
+
+
+      @Id
+      @GeneratedValue
+      private Long id;
+
+      private String name;
+
+
+      @Column
+      @Type(type = "org.jadira.usertype.moneyandcurrency.joda.PersistentMoneyAmount",
+              parameters = {@org.hibernate.annotations.Parameter(name = "currencyCode", value = "CNY")})
+      private Money price;
+
+      @Column(updatable = false)
+      @CreationTimestamp
+      private Date createTime;
+
+      @UpdateTimestamp
+      private Date updateTime;
+  }
+
+  ```
+
+  - CoffeeOrder.java
+
+  ```java
+  @Entity
+  @Data
+  @AllArgsConstructor
+  @NoArgsConstructor
+  @Builder
+  @Table(name = "T_ORDER")
+  public class CoffeeOrder implements Serializable {
+
+      @Id
+      @GeneratedValue
+      private Long id;
+
+      private String customer;
+
+      @ManyToMany
+      @JoinTable(name = "T_ORDER_COFFEE")
+      private List<Coffee> items;
+
+      @Column(nullable = false)
+      private Integer state;
+
+      @Column(updatable = false)
+      @CreationTimestamp
+      private Date createTime;
+
+      @UpdateTimestamp
+      private Date updateTime;
+
+  }
+  ```
+
+  - CoffeeRepository.java
+
+  ```java
+  public interface CoffeeOrderRepository extends CrudRepository<CoffeeOrder,Long> {
+  }
+  ```
+
+  - CoffeeOrderRepository.java
+
+  ```java
+  public interface CoffeeRepository extends CrudRepository<Coffee,Long> {
+  }
+  ```
+
+  - JpaDemoApplication.java
+
+  ```java
+  @Slf4j
+  @EnableJpaRepositories
+  @SpringBootApplication
+  public class JpaDemoApplication implements ApplicationRunner {
+
+      @Autowired
+      private CoffeeRepository coffeeRepository;
+
+      @Autowired
+      private CoffeeOrderRepository coffeeOrderRepository;
+
+      public static void main(String[] args) {
+          SpringApplication.run(JpaDemoApplication.class, args);
+      }
+
+      @Override
+      public void run(ApplicationArguments args) throws Exception {
+
+          //initOrders();
+      }
+
+      public void initOrders() {
+
+          Coffee espresso = Coffee.builder().name("espresso")
+                  .price(Money.of(CurrencyUnit.of("CNY"), 20.0)).build();
+
+          coffeeRepository.save(espresso);
+          log.info("Coffee: {}", espresso);
+
+          Coffee latte = Coffee.builder().name("latte")
+                  .price(Money.of(CurrencyUnit.of("CNY"), 30.0))
+                  .build();
+
+          coffeeRepository.save(latte);
+
+          log.info("Coffee: {}", latte);
+
+          CoffeeOrder li_lei = CoffeeOrder.builder().customer("Li Lei")
+                  .items(Collections.singletonList(espresso))
+                  .state(0)
+                  .build();
+
+          coffeeOrderRepository.save(li_lei);
+
+          log.info("Coffee Order : {}", li_lei);
+
+
+          li_lei = CoffeeOrder.builder().customer("Li Lei")
+                  .items(Arrays.asList(espresso, latte))
+                  .state(0)
+                  .build();
+
+          coffeeOrderRepository.save(li_lei);
+
+          log.info("Coffee Order :{}", li_lei);
+
+      }
+  }
+  ```
+
+- 运行结果
+
+  ```yml
+  2019-12-19 22:49:48.344  INFO 1233 --- [           main] org.hibernate.dialect.Dialect            : HHH000400: Using dialect: org.hibernate.dialect.H2Dialect
+  Hibernate: 
+      
+      drop table t_menu if exists
+  Hibernate: 
+      
+      drop table t_order if exists
+  Hibernate: 
+      
+      drop table t_order_coffee if exists
+  Hibernate: 
+      
+      drop sequence if exists hibernate_sequence
+  Hibernate: create sequence hibernate_sequence start with 1 increment by 1
+  Hibernate: 
+      
+      create table t_menu (
+        id bigint not null,
+          create_time timestamp,
+          name varchar(255),
+          price decimal(19,2),
+          update_time timestamp,
+          primary key (id)
+      )
+  Hibernate: 
+      
+      create table t_order (
+        id bigint not null,
+          create_time timestamp,
+          customer varchar(255),
+          state integer not null,
+          update_time timestamp,
+          primary key (id)
+      )
+  Hibernate: 
+      
+      create table t_order_coffee (
+        coffee_order_id bigint not null,
+          items_id bigint not null
+      )
+  Hibernate: 
+      
+      alter table t_order_coffee 
+        add constraint FKj2swxd3y69u2tfvalju7sr07q 
+        foreign key (items_id) 
+        references t_menu
+  Hibernate: 
+      
+      alter table t_order_coffee 
+        add constraint FK33ucji9dx64fyog6g17blpx9v 
+        foreign key (coffee_order_id) 
+        references t_order
+  2019-12-19 22:49:50.424  INFO 1233 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+  ```
+
+---
+
+---
+
+- 复杂的jpa实例-jpa_complex_demo
+
+  - application.yml
+
+  ```yml
+  spring.jpa.hibernate.ddl-auto=create-drop
+  spring.jpa.properties.hibernate.show_sql=true
+  spring.jpa.properties.hibernate.format_sql=true
+  ```
+
+  - pom.xml
+
+  ```xml
+  <dependencies>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-actuator</artifactId>
+          </dependency>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-data-jdbc</artifactId>
+          </dependency>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-data-jpa</artifactId>
+          </dependency>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-web</artifactId>
+          </dependency>
+
+          <dependency>
+              <groupId>org.joda</groupId>
+              <artifactId>joda-money</artifactId>
+              <version>1.0.1</version>
+          </dependency>
+          <dependency>
+              <groupId>org.jadira.usertype</groupId>
+              <artifactId>usertype.core</artifactId>
+              <version>6.0.1.GA</version>
+          </dependency>
+          <dependency>
+              <groupId>com.h2database</groupId>
+              <artifactId>h2</artifactId>
+              <scope>runtime</scope>
+          </dependency>
+          <dependency>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <optional>true</optional>
+          </dependency>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-test</artifactId>
+              <scope>test</scope>
+
+          </dependency>
+      </dependencies>
+  ```
+
+  - BaseEntity.java
+
+  ```java
+  @Entity
+  @Data
+  @AllArgsConstructor
+  @NoArgsConstructor
+  @Builder
+  @MappedSuperclass
+  public class BaseEntity implements Serializable {
+
+      @Id
+      @GeneratedValue
+      private Long id;
+
+      @Column(updatable = false)
+      @CreationTimestamp
+      private Date createTime;
+
+      @UpdateTimestamp
+      private Date updateTime;
+  }
+  ```
+
+  - Coffee.java
+
+  ```java
+  @Entity
+  @Table(name = "T_MENU")
+  @Builder
+  @Data
+  @ToString(callSuper = true)
+  @AllArgsConstructor
+  @NoArgsConstructor
+  public class Coffee extends BaseEntity implements Serializable {
+
+      private String name;
+
+      @Type(type = "org.jadira.usertype.moneyandcurrency.joda.PersistentMoneyAmount",
+              parameters = {@org.hibernate.annotations.Parameter(name = "currencyCode", value = "CNY")})
+      private Money price;
+  }
+  ```
+
+  - CoffeeOrder.java
+
+  ```java
+  @Data
+  @AllArgsConstructor
+  @NoArgsConstructor
+  @Builder
+  @Entity
+  @ToString(callSuper = true)
+  @Table(name = "T_ORDER")
+  public class CoffeeOrder extends BaseEntity implements Serializable {
+
+      private String customer;
+
+
+      @ManyToMany
+      @JoinTable(name = "T_ORDER_COFFEE")
+      @OrderBy("id")
+      private List<Coffee> items;
+
+      @Enumerated
+      @Column(nullable = false)
+      private OrderState state;
+  }
+  ```
+
+  - OrderState.java
+
+  ```java
+  public enum OrderState {
+      INIT, PAID, BREWING, BREWED, TAKEN, CANCELLED
+  }
+  ```
+
+  - BaseRespository.java
+
+  ```java
+  public interface BaseRepository<T,Long> extends PagingAndSortingRepository<T,Long> {
+
+      List<T> findTop3ByOrderByUpdateTimeDescIdAsc();
+  }
+  ```
+
+- CoffeeRepository.java
+
+  ```java
+  public interface CoffeeRepository extends BaseRepository<Coffee,Long> {
+  }
+  ```
+
+- CoffeeOrderRepository.java
+
+  ```java
+  public interface CoffeeOrderRepository extends BaseRepository<CoffeeOrder,Long> {
+
+      List<CoffeeOrder> findByCustomerOrderById(String customer);
+      List<CoffeeOrder> findByItems_Name(String name);
+  }
+  ```
+
+- JpaComplexApplication.java
+
+  ```java
+  @EnableJpaRepositories
+  @SpringBootApplication
+  @EnableTransactionManagement
+  @Slf4j
+  public class JpaComplexDemoApplication implements ApplicationRunner {
+
+      @Autowired
+      private CoffeeOrderRepository coffeeOrderRepository;
+
+      @Autowired
+      private CoffeeRepository coffeeRepository;
+
+      @Autowired
+      private BaseRepository baseRepository;
+
+      public static void main(String[] args) {
+          SpringApplication.run(JpaComplexDemoApplication.class, args);
+      }
+
+      @Override
+      @Transactional
+      public void run(ApplicationArguments args) throws Exception {
+
+          //initOrders();
+          //findOrders();
+      }
+
+      private void initOrders() {
+          Coffee latte = Coffee.builder().name("latte")
+                  .price(Money.of(CurrencyUnit.of("CNY"), 30.0))
+                  .build();
+          coffeeRepository.save(latte);
+          log.info("Coffee: {}", latte);
+
+          Coffee espresso = Coffee.builder().name("espresso")
+                  .price(Money.of(CurrencyUnit.of("CNY"), 20.0))
+                  .build();
+          coffeeRepository.save(espresso);
+          log.info("Coffee: {}", espresso);
+
+          CoffeeOrder order = CoffeeOrder.builder()
+                  .customer("Li Lei")
+                  .items(Collections.singletonList(espresso))
+                  .state(OrderState.INIT)
+                  .build();
+          coffeeOrderRepository.save(order);
+          log.info("Order: {}", order);
+
+          order = CoffeeOrder.builder()
+                  .customer("Li Lei")
+                  .items(Arrays.asList(espresso, latte))
+                  .state(OrderState.INIT)
+                  .build();
+          coffeeOrderRepository.save(order);
+          log.info("Order: {}", order);
+      }
+
+
+
+      private void findOrders() {
+          coffeeRepository
+                  .findAll(Sort.by(Sort.Direction.DESC, "id"))
+                  .forEach(c -> log.info("Loading {}", c));
+
+          List<CoffeeOrder> list = coffeeOrderRepository.findTop3ByOrderByUpdateTimeDescIdAsc();
+          log.info("findTop3ByOrderByUpdateTimeDescIdAsc: {}", getJoinedOrderId(list));
+
+          list = coffeeOrderRepository.findByCustomerOrderById("Li Lei");
+          log.info("findByCustomerOrderById: {}", getJoinedOrderId(list));
+
+          // 不开启事务会因为没Session而报LazyInitializationException
+          list.forEach(o -> {
+              log.info("Order {}", o.getId());
+              o.getItems().forEach(i -> log.info("  Item {}", i));
+          });
+
+          list = coffeeOrderRepository.findByItems_Name("latte");
+          log.info("findByItems_Name: {}", getJoinedOrderId(list));
+      }
+
+      private String getJoinedOrderId(List<CoffeeOrder> list) {
+          return list.stream().map(o -> o.getId().toString())
+                  .collect(Collectors.joining(","));
+      }
+  }
+  ```
+
+- 运行结果
+
+```yml
+2019-12-19 23:13:12.288  INFO 1477 --- [           main] org.hibernate.dialect.Dialect            : HHH000400: Using dialect: org.hibernate.dialect.H2Dialect
+Hibernate: 
+    
+    drop table t_menu if exists
+Hibernate: 
+    
+    drop table t_order if exists
+Hibernate: 
+    
+    drop table t_order_coffee if exists
+Hibernate: 
+    
+    drop sequence if exists hibernate_sequence
+Hibernate: create sequence hibernate_sequence start with 1 increment by 1
+Hibernate: 
+    
+    create table t_menu (
+       id bigint not null,
+        create_time timestamp,
+        update_time timestamp,
+        name varchar(255),
+        price decimal(19,2),
+        primary key (id)
+    )
+Hibernate: 
+    
+    create table t_order (
+       id bigint not null,
+        create_time timestamp,
+        update_time timestamp,
+        customer varchar(255),
+        state integer not null,
+        primary key (id)
+    )
+Hibernate: 
+    
+    create table t_order_coffee (
+       coffee_order_id bigint not null,
+        items_id bigint not null
+    )
+Hibernate: 
+    
+    alter table t_order_coffee 
+       add constraint FKj2swxd3y69u2tfvalju7sr07q 
+       foreign key (items_id) 
+       references t_menu
+Hibernate: 
+    
+    alter table t_order_coffee 
+       add constraint FK33ucji9dx64fyog6g17blpx9v 
+       foreign key (coffee_order_id) 
+       references t_order
+2019-12-19 23:13:14.386  INFO 1477 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+```
+
 ---
