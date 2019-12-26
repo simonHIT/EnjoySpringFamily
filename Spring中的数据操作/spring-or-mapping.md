@@ -686,3 +686,250 @@ Hibernate:
 ```
 
 ---
+
+## 通过 Spring Data JPA 操作数据库
+
+- Repository
+  
+  - @EnableJpaRepositories 注解启用jpa Repository
+  - Repository<T, ID> 接⼝的实现有哪些
+    - CrudRepository<T, ID>
+    - PagingAndSortingRepository<T, ID>
+    - JpaRepository<T, ID>
+
+- 如何定义查询
+  
+  - 根据⽅法名定义查询
+    - find…By… / read…By… / query…By… / get…By…
+    - count…By…
+    - …OrderBy…[Asc / Desc]
+    - And / Or / IgnoreCase
+    - Top / First / Distinct
+
+- 分⻚查询的实现
+  
+  - PagingAndSortingRepository<T, ID>
+  - Pageable / Sort
+  - Slice<T> / Page<T>
+
+- 保存实体
+  
+---
+
+    ```java
+            Coffee latte = Coffee.builder().name("latte")
+                    .price(Money.of(CurrencyUnit.of("CNY"), 30.0))
+                    .build();
+            coffeeRepository.save(latte);
+            log.info("Coffee: {}", latte);
+
+            Coffee espresso = Coffee.builder().name("espresso")
+                    .price(Money.of(CurrencyUnit.of("CNY"), 20.0))
+                    .build();
+            coffeeRepository.save(espresso);
+            log.info("Coffee: {}", espresso);
+    ```
+
+---
+
+---
+
+    ```java
+    CoffeeOrder order = CoffeeOrder.builder()
+                    .customer("Li Lei")
+                    .items(Collections.singletonList(espresso))
+                    .state(OrderState.INIT)
+                    .build();
+            orderRepository.save(order);
+            log.info("Order: {}", order);
+
+            order = CoffeeOrder.builder()
+                    .customer("Li Lei")
+                    .items(Arrays.asList(espresso, latte))
+                    .state(OrderState.INIT)
+                    .build();
+            orderRepository.save(order);
+            log.info("Order: {}", order);
+    ```
+
+---
+
+- 查询实体
+
+---
+
+    ```java
+    offeeRepository
+                    .findAll(Sort.by(Sort.Direction.DESC, "id"))
+                    .forEach(c -> log.info("Loading {}", c));
+
+            List<CoffeeOrder> list = orderRepository.findTop3ByOrderByUpdateTimeDescIdAsc();
+            log.info("findTop3ByOrderByUpdateTimeDescIdAsc: {}", getJoinedOrderId(list));
+
+            list = orderRepository.findByCustomerOrderById("Li Lei");
+            log.info("findByCustomerOrderById: {}", getJoinedOrderId(list));
+    ```
+
+---
+
+---
+
+    ```java
+    public interface CoffeeOrderRepository extends BaseRepository<CoffeeOrder, Long> {
+        List<CoffeeOrder> findByCustomerOrderById(String customer);
+        List<CoffeeOrder> findByItems_Name(String name);
+    }
+    ```
+
+---
+
+
+## Repository 是怎么从接⼝变成 Bean 的
+
+- Repository Bean 是如何创建的
+
+  - JpaRepositoriesRegistrar
+    - 激活了 @EnableJpaRepositories
+    - 返回了 JpaRepositoryConfigExtension
+  - RepositoryBeanDefinitionRegistrarSupport.registerBeanDefinitions 
+    - 注册 Repository Bean（类型是 JpaRepositoryFactoryBean ）
+  - RepositoryConfigurationExtensionSupport.getRepositoryConfigurations 
+    - 取得 Repository 配置
+  - JpaRepositoryFactory.getTargetRepository 
+    - 创建了 Repository
+
+- 接⼝中的⽅法是如何被解释的
+
+  - RepositoryFactorySupport.getRepository 添加了Advice 增强
+    - DefaultMethodInvokingMethodInterceptor
+    - QueryExecutorMethodInterceptor
+  - AbstractJpaQuery.execute 执⾏具体的查询
+    - 语法解析在 Part 中
+
+## 通过 MyBatis 操作数据库
+
+- 认识 MyBatis
+
+  - MyBatis（https://github.com/mybatis/mybatis-3）
+    - ⼀款优秀的持久层框架
+    - ⽀持定制化 SQL、存储过程和⾼级映射
+  - 在 Spring 中使⽤ MyBatis 
+    - MyBatis Spring Adapter（https://github.com/mybatis/spring）
+    - MyBatis Spring-Boot-Starter（https://github.com/mybatis/spring-boot-starter）
+
+  - 简单配置
+
+    - mybatis.mapper-locations = classpath*:mapper/**/*.xml
+    - mybatis.type-aliases-package = 类型别名的包名
+    - mybatis.type-handlers-package = TypeHandler扫描包名
+    - mybatis.configuration.map-underscore-to-camel-case = true
+
+  - Mapper 的定义与扫描
+    - @MapperScan 配置扫描位置
+    - @Mapper 定义接⼝
+    - 映射的定义—— XML 与注解
+
+---
+
+    ```java
+    @Mapper
+    public interface CoffeeMapper {
+        @Insert("insert into t_coffee (name, price, create_time, update_time)"
+                + "values (#{name}, #{price}, now(), now())")
+        @Options(useGeneratedKeys = true)
+        int save(Coffee coffee);
+
+        @Select("select * from t_coffee where id = #{id}")
+        @Results({
+                @Result(id = true, column = "id", property = "id"),
+                @Result(column = "create_time", property = "createTime"),
+                // map-underscore-to-camel-case = true 可以实现一样的效果
+                // @Result(column = "update_time", property = "updateTime"),
+        })
+        Coffee findById(@Param("id") Long id);
+    }
+    ```
+
+---
+
+## 让 MyBatis 更好⽤的那些⼯具-MyBatis Generator
+
+- 认识 MyBatis Generator
+  - MyBatis Generator（http://www.mybatis.org/generator/）
+    - MyBatis 代码⽣成器
+    - 根据数据库表⽣成相关代码
+      - POJO
+      - Mapper 接⼝
+      - SQL Map XML
+
+- 运⾏ MyBatis Generator
+  
+  - 命令⾏
+    - java -jar mybatis-generator-core-x.x.x.jar -configfile generatorConfig.xml 
+  - Maven Plugin（mybatis-generator-maven-plugin）
+    - mvn mybatis-generator:generate 
+    - ${basedir}/src/main/resources/generatorConfig.xml
+  - Eclipse Plugin 
+  - Java 程序
+  - Ant Task
+
+- 配置 MyBatis Generator
+  - generatorConfiguration 
+  - context 
+    - jdbcConnection
+    - javaModelGenerator
+    - sqlMapGenerator
+    - javaClientGenerator （ANNOTATEDMAPPER / XMLMAPPER / MIXEDMAPPER）
+    - table
+
+- ⽣成时可以使⽤的插件
+  - 内置插件都在 org.mybatis.generator.plugins 包中
+    - FluentBuilderMethodsPlugin
+    - ToStringPlugin
+    - SerializablePlugin
+    - RowBoundsPlugin
+    - ……
+
+- 使⽤⽣成的对象
+  - 简单操作，直接使⽤⽣成的 xxxMapper 的⽅法
+  - 复杂查询，使⽤⽣成的 xxxExample 对象
+
+---
+
+    ```java
+    Coffee espresso = new Coffee()
+                    .withName("espresso")
+                    .withPrice(Money.of(CurrencyUnit.of("CNY"), 20.0))
+                    .withCreateTime(new Date())
+                    .withUpdateTime(new Date());
+            coffeeMapper.insert(espresso);
+
+            Coffee latte = new Coffee()
+                    .withName("latte")
+                    .withPrice(Money.of(CurrencyUnit.of("CNY"), 30.0))
+                    .withCreateTime(new Date())
+                    .withUpdateTime(new Date());
+            coffeeMapper.insert(latte);
+
+            Coffee s = coffeeMapper.selectByPrimaryKey(1L);
+            log.info("Coffee {}", s);
+
+            CoffeeExample example = new CoffeeExample();
+            example.createCriteria().andNameEqualTo("latte");
+            List<Coffee> list = coffeeMapper.selectByExample(example);
+            list.forEach(e -> log.info("selectByExample: {}", e));
+    ```
+
+---
+
+## 让 MyBatis 更好⽤的那些⼯具- MyBatis PageHelper
+
+- 认识 MyBatis PageHelper
+  - MyBatis PageHepler（https://pagehelper.github.io）
+    - ⽀持多种数据库
+    - ⽀持多种分⻚⽅式
+    - SpringBoot ⽀持（https://github.com/pagehelper/pagehelper-spring-boot ）
+    - pagehelper-spring-boot-starter
+
+
+## SpringBucks 进度⼩结
