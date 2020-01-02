@@ -879,7 +879,7 @@ Hibernate:
     - jdbcConnection
     - javaModelGenerator
     - sqlMapGenerator
-    - javaClientGenerator （ANNOTATEDMAPPER / XMLMAPPER / MIXEDMAPPER）
+    - javaClientGenerator （ANNOTATEDMAPPER(基于注解的mapper，适用于简单逻辑) / XMLMAPPER(基于XML的mapper，适用于复杂逻辑需要微调的) / MIXEDMAPPER(混合型的mapper，对于简单的接口实现使用注解完成，对于复杂的接口实现则通过XML的配置实现)）
     - table
 
 - ⽣成时可以使⽤的插件
