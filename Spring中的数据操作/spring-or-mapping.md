@@ -832,11 +832,14 @@ Hibernate:
 ---
 
     ```java
+
     @Mapper
     public interface CoffeeMapper {
+
+
         @Insert("insert into t_coffee (name, price, create_time, update_time)"
                 + "values (#{name}, #{price}, now(), now())")
-        @Options(useGeneratedKeys = true)
+        @Options(useGeneratedKeys = true,keyProperty = "id")
         int save(Coffee coffee);
 
         @Select("select * from t_coffee where id = #{id}")
@@ -848,6 +851,7 @@ Hibernate:
         })
         Coffee findById(@Param("id") Long id);
     }
+    
     ```
 
 ---
