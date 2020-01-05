@@ -716,7 +716,7 @@ Hibernate:
   
 ---
 
-    ```java
+```java
             Coffee latte = Coffee.builder().name("latte")
                     .price(Money.of(CurrencyUnit.of("CNY"), 30.0))
                     .build();
@@ -728,7 +728,7 @@ Hibernate:
                     .build();
             coffeeRepository.save(espresso);
             log.info("Coffee: {}", espresso);
-    ```
+```
 
 ---
 
