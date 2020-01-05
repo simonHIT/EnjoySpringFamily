@@ -900,29 +900,43 @@ Hibernate:
 
 ---
 
-    ```java
-    Coffee espresso = new Coffee()
-                    .withName("espresso")
-                    .withPrice(Money.of(CurrencyUnit.of("CNY"), 20.0))
-                    .withCreateTime(new Date())
-                    .withUpdateTime(new Date());
-            coffeeMapper.insert(espresso);
+- 实例代码
+  
+```java
+Coffee espresso = new Coffee()
+                .withName("espresso")
+                .withPrice(Money.of(CurrencyUnit.of("CNY"), 20.0))
+                .withCreateTime(new Date())
+                .withUpdateTime(new Date());
+        coffeeMapper.insert(espresso);
 
-            Coffee latte = new Coffee()
-                    .withName("latte")
-                    .withPrice(Money.of(CurrencyUnit.of("CNY"), 30.0))
-                    .withCreateTime(new Date())
-                    .withUpdateTime(new Date());
-            coffeeMapper.insert(latte);
+        Coffee latte = new Coffee()
+                .withName("latte")
+                .withPrice(Money.of(CurrencyUnit.of("CNY"), 30.0))
+                .withCreateTime(new Date())
+                .withUpdateTime(new Date());
+        coffeeMapper.insert(latte);
 
-            Coffee s = coffeeMapper.selectByPrimaryKey(1L);
-            log.info("Coffee {}", s);
+        Coffee s = coffeeMapper.selectByPrimaryKey(1L);
+        log.info("Coffee {}", s);
 
-            CoffeeExample example = new CoffeeExample();
-            example.createCriteria().andNameEqualTo("latte");
-            List<Coffee> list = coffeeMapper.selectByExample(example);
-            list.forEach(e -> log.info("selectByExample: {}", e));
-    ```
+        CoffeeExample example = new CoffeeExample();
+        example.createCriteria().andNameEqualTo("latte");
+        List<Coffee> list = coffeeMapper.selectByExample(example);
+        list.forEach(e -> log.info("selectByExample: {}", e));
+```
+
+- 运行结果
+
+```yml
+2020-01-05 22:26:06.932  INFO 1798 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2020-01-05 22:26:07.093  INFO 1798 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2020-01-05 22:26:07.900  INFO 1798 --- [           main] c.s.m.MybatisGeneratorDemoApplication    : Started MybatisGeneratorDemoApplication in 2.985 seconds (JVM running for 4.533)
+2020-01-05 22:26:07.999  INFO 1798 --- [           main] c.s.m.MybatisGeneratorDemoApplication    : Coffee Coffee [Hash = 365201320, id=1, name=espresso, price=CNY 20.00, createTime=Sun Jan 05 22:26:07 CST 2020, updateTime=Sun Jan 05 22:26:07 CST 2020]
+2020-01-05 22:26:08.030  INFO 1798 --- [           main] c.s.m.MybatisGeneratorDemoApplication    : selectByExample: Coffee [Hash = 793483510, id=2, name=latte, price=CNY 30.00, createTime=Sun Jan 05 22:26:07 CST 2020, updateTime=Sun Jan 05 22:26:07 CST 2020]
+2020-01-05 22:26:08.035  INFO 1798 --- [extShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2020-01-05 22:26:08.038  INFO 1798 --- [extShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+```
 
 ---
 
@@ -936,5 +950,52 @@ Hibernate:
     - SpringBoot ⽀持（https://github.com/pagehelper/pagehelper-spring-boot ）
     - pagehelper-spring-boot-starter
 
+- 实例代码
+  
+```java
+        coffeeMapper.findAllWithRowBounds(new RowBounds(1, 3))
+                .forEach(c -> log.info("Page(1) Coffee {}", c));
+        coffeeMapper.findAllWithRowBounds(new RowBounds(2, 3))
+                .forEach(c -> log.info("Page(2) Coffee {}", c));
+
+        log.info("===================");
+
+        coffeeMapper.findAllWithRowBounds(new RowBounds(1, 0))
+                .forEach(c -> log.info("Page(1) Coffee {}", c));
+
+        log.info("===================");
+
+        coffeeMapper.findAllWithParam(1, 3)
+                .forEach(c -> log.info("Page(1) Coffee {}", c));
+        List<Coffee> list = coffeeMapper.findAllWithParam(2, 3);
+        PageInfo page = new PageInfo(list);
+        log.info("PageInfo: {}", page);
+```
+
+- 运行结果
+
+```yml
+2020-01-05 22:45:29.080  INFO 1925 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2020-01-05 22:45:29.242  INFO 1925 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2020-01-05 22:45:29.940  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Started MybatisPagehelperDemoApplication in 3.371 seconds (JVM running for 4.737)
+2020-01-05 22:45:30.098  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Page(1) Coffee Coffee(id=1, name=espresso, price=CNY 20.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)
+2020-01-05 22:45:30.098  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Page(1) Coffee Coffee(id=2, name=latte, price=CNY 25.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)
+2020-01-05 22:45:30.098  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Page(1) Coffee Coffee(id=3, name=capuccino, price=CNY 25.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)
+2020-01-05 22:45:30.101  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Page(2) Coffee Coffee(id=4, name=mocha, price=CNY 30.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)
+2020-01-05 22:45:30.101  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Page(2) Coffee Coffee(id=5, name=macchiato, price=CNY 30.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)
+2020-01-05 22:45:30.101  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : ===================
+2020-01-05 22:45:30.104  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Page(1) Coffee Coffee(id=1, name=espresso, price=CNY 20.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)
+2020-01-05 22:45:30.104  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Page(1) Coffee Coffee(id=2, name=latte, price=CNY 25.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)
+2020-01-05 22:45:30.104  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Page(1) Coffee Coffee(id=3, name=capuccino, price=CNY 25.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)
+2020-01-05 22:45:30.104  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Page(1) Coffee Coffee(id=4, name=mocha, price=CNY 30.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)
+2020-01-05 22:45:30.104  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Page(1) Coffee Coffee(id=5, name=macchiato, price=CNY 30.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)
+2020-01-05 22:45:30.104  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : ===================
+2020-01-05 22:45:30.138  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Page(1) Coffee Coffee(id=1, name=espresso, price=CNY 20.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)
+2020-01-05 22:45:30.138  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Page(1) Coffee Coffee(id=2, name=latte, price=CNY 25.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)
+2020-01-05 22:45:30.138  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : Page(1) Coffee Coffee(id=3, name=capuccino, price=CNY 25.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)
+2020-01-05 22:45:30.142  INFO 1925 --- [           main] c.s.m.MybatisPagehelperDemoApplication   : PageInfo: PageInfo{pageNum=2, pageSize=3, size=2, startRow=4, endRow=5, total=5, pages=2, list=Page{count=true, pageNum=2, pageSize=3, startRow=3, endRow=6, total=5, pages=2, reasonable=true, pageSizeZero=true}[Coffee(id=4, name=mocha, price=CNY 30.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020), Coffee(id=5, name=macchiato, price=CNY 30.00, createTime=Sun Jan 05 22:45:29 CST 2020, updateTime=Sun Jan 05 22:45:29 CST 2020)], prePage=1, nextPage=0, isFirstPage=false, isLastPage=true, hasPreviousPage=true, hasNextPage=false, navigatePages=8, navigateFirstPage=1, navigateLastPage=2, navigatepageNums=[1, 2]}
+2020-01-05 22:45:30.148  INFO 1925 --- [extShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2020-01-05 22:45:30.152  INFO 1925 --- [extShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+```
 
 ## SpringBucks 进度⼩结
