@@ -96,6 +96,127 @@
     )
     ```
 
+---
+- mongo-demo
+- MoneyReadConvertor.java
+
+  ```java
+  public class MoneyReadCovertor implements Converter<Document, Money> {
+      @Override
+      public Money convert(Document document) {
+          //return null;
+          Document money = (Document) document.get("money");
+
+          double amount = Double.parseDouble(money.getString("amount"));
+
+          String currency = ((Document) money.get("currency")).getString("code");
+
+          return Money.of(CurrencyUnit.of(currency), amount);
+      }
+  }
+  ```
+
+- Money.java
+
+  ```java
+  @Document
+  @Builder
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Data
+  public class Coffee {
+
+      @Id
+      private String id;
+
+      private String name;
+
+      private Money price;
+
+      private Date createTime;
+
+      private Date updateTime;
+
+  }
+  ```
+
+- MongoDemoApplication.java
+
+  ```java
+  @SpringBootApplication
+  @Slf4j
+  public class MongoDemoApplication implements ApplicationRunner {
+
+      @Autowired
+      private MongoTemplate mongoTemplate;
+
+      public static void main(String[] args) {
+          SpringApplication.run(MongoDemoApplication.class, args);
+      }
+
+      @Bean
+      public MongoCustomConversions mongoCustomConversions() {
+          return new MongoCustomConversions(Arrays.asList(new MoneyReadCovertor()));
+      }
+
+      @Override
+      public void run(ApplicationArguments args) throws Exception {
+
+          Coffee espresso = Coffee.builder()
+                  .name("espresso")
+                  .price(Money.of(CurrencyUnit.of("CNY"), 20.0))
+                  .createTime(new Date())
+                  .updateTime(new Date()).build();
+
+          Coffee saved = mongoTemplate.save(espresso);
+
+          log.info("Coffee {}", saved);
+
+          List<Coffee> coffees = mongoTemplate.find(
+                  Query.query(Criteria.where("name").is("espresso")), Coffee.class
+          );
+
+          log.info("find {} coffee", coffees.size());
+
+          coffees.forEach(c -> log.info("Coffee {}", c));
+
+          Thread.sleep(1000);
+
+          UpdateResult updateResult = mongoTemplate.updateFirst(Query.query(Criteria.where("name").is("espresso")),
+                  new Update().set("price", Money.ofMajor(CurrencyUnit.of("CNY"), 30)).currentDate("updateTime"),
+                  Coffee.class);
+
+          log.info("Update result: {}", updateResult.getModifiedCount());
+
+          Coffee updateOne = mongoTemplate.findById(saved.getId(), Coffee.class);
+
+          log.info("Update result:{}", updateOne);
+
+          mongoTemplate.remove(updateOne);
+      }
+  }
+  ```
+- application.properties
+
+  ```yml
+  spring.data.mongodb.uri=mongodb://springbucks:springbucks@localhost:27017/springbucks
+  ```
+
+- 运行结果
+
+```yml
+2020-01-12 16:52:42.431  INFO 1952 --- [           main] c.simon.mongodemo.MongoDemoApplication   : Started MongoDemoApplication in 4.304 seconds (JVM running for 5.834)
+2020-01-12 16:52:42.799  INFO 1952 --- [           main] org.mongodb.driver.connection            : Opened connection [connectionId{localValue:2, serverValue:4}] to localhost:27017
+2020-01-12 16:52:42.848  INFO 1952 --- [           main] c.simon.mongodemo.MongoDemoApplication   : Coffee Coffee(id=5e1ade5a6de7a849c20e45c5, name=espresso, price=CNY 20.00, createTime=Sun Jan 12 16:52:42 CST 2020, updateTime=Sun Jan 12 16:52:42 CST 2020)
+2020-01-12 16:52:42.995  INFO 1952 --- [           main] c.simon.mongodemo.MongoDemoApplication   : find 1 coffee
+2020-01-12 16:52:42.995  INFO 1952 --- [           main] c.simon.mongodemo.MongoDemoApplication   : Coffee Coffee(id=5e1ade5a6de7a849c20e45c5, name=espresso, price=CNY 20.00, createTime=Sun Jan 12 16:52:42 CST 2020, updateTime=Sun Jan 12 16:52:42 CST 2020)
+2020-01-12 16:52:44.044  INFO 1952 --- [           main] c.simon.mongodemo.MongoDemoApplication   : Update result: 1
+2020-01-12 16:52:44.049  INFO 1952 --- [           main] c.simon.mongodemo.MongoDemoApplication   : Update result:Coffee(id=5e1ade5a6de7a849c20e45c5, name=espresso, price=CNY 30.00, createTime=Sun Jan 12 16:52:42 CST 2020, updateTime=Sun Jan 12 16:52:44 CST 2020)
+2020-01-12 16:52:44.067  INFO 1952 --- [extShutdownHook] org.mongodb.driver.connection            : Closed connection [connectionId{localValue:2, serverValue:4}] to localhost:27017 because the pool has been closed.
+```
+
+---
+
 - Spring Data MongoDB 的 Repository
 
   - 启用注解@EnableMongoRepositories
@@ -103,6 +224,112 @@
     - MongoRepository<T, ID>
     - PagingAndSortingRepository<T, ID>
     - CrudRepository<T, ID>
+
+
+---
+
+- mongo-repository-demo
+
+- application.properties
+    
+  ```yml
+    spring.data.mongodb.uri=mongodb://springbucks:springbucks@localhost:27017/springbucks
+  ```
+
+- money.java
+
+  ```java
+  同mongo-demo
+  ```
+
+- MoneyReadConvertor.java
+ 
+  ```java
+  同mongo-demo
+  ```
+
+- CoffeeRepository.java
+
+  ```java
+  public interface CoffeeRepository extends MongoRepository<Coffee,String> {
+
+      List<Coffee> findByName(String name);
+  }
+  ```
+
+- MongoReositoryDemoApplication.java
+
+  ```java
+  @SpringBootApplication
+  @Slf4j
+  @EnableMongoRepositories
+  public class MongoRepositoryDemoApplication implements ApplicationRunner {
+
+      @Autowired
+      private CoffeeRepository coffeeRepository;
+
+      public static void main(String[] args) {
+          SpringApplication.run(MongoRepositoryDemoApplication.class, args);
+      }
+
+      @Bean
+      public MongoCustomConversions mongoCustomConversions() {
+
+          return new MongoCustomConversions(Arrays.asList(new MoneyReadCovertor()));
+      }
+
+      @Override
+      public void run(ApplicationArguments args) throws Exception {
+
+          Coffee espresso = Coffee.builder()
+                  .name("espresso")
+                  .price(Money.of(CurrencyUnit.of("CNY"), 20.0))
+                  .createTime(new Date())
+                  .updateTime(new Date())
+                  .build();
+
+          Coffee latte = Coffee.builder()
+                  .name("latte")
+                  .price(Money.of(CurrencyUnit.of("CNY"), 30.0))
+                  .updateTime(new Date())
+                  .createTime(new Date())
+                  .build();
+
+          coffeeRepository.insert(Arrays.asList(espresso, latte));
+
+          coffeeRepository.findAll(Sort.by("name"))
+                  .forEach(c -> log.info("Coffee saved as {}", c));
+
+          Thread.sleep(1000);
+
+          latte.setPrice(Money.of(CurrencyUnit.of("CNY"), 35.00));
+          latte.setUpdateTime(new Date());
+          coffeeRepository.save(latte);
+          coffeeRepository.findByName("latte")
+                  .forEach(coffee -> log.info("Latte saved as {}", coffee));
+
+          //coffeeRepository.deleteAll();
+      }
+  }
+  ```
+
+- 运行结果
+
+  ```yml
+  2020-01-12 20:20:10.239  INFO 3722 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data MongoDB repositories in DEFAULT mode.
+  2020-01-12 20:20:10.323  INFO 3722 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 78ms. Found 1 MongoDB repository interfaces.
+  2020-01-12 20:20:11.095  INFO 3722 --- [           main] org.mongodb.driver.cluster               : Cluster created with settings {hosts=[localhost:27017], mode=SINGLE, requiredClusterType=UNKNOWN, serverSelectionTimeout='30000 ms', maxWaitQueueSize=500}
+  2020-01-12 20:20:11.182  INFO 3722 --- [localhost:27017] org.mongodb.driver.connection            : Opened connection [connectionId{localValue:1, serverValue:6}] to localhost:27017
+  2020-01-12 20:20:11.194  INFO 3722 --- [localhost:27017] org.mongodb.driver.cluster               : Monitor thread successfully connected to server with description ServerDescription{address=localhost:27017, type=STANDALONE, state=CONNECTED, ok=true, version=ServerVersion{versionList=[4, 2, 2]}, minWireVersion=0, maxWireVersion=8, maxDocumentSize=16777216, logicalSessionTimeoutMinutes=30, roundTripTimeNanos=9115465}
+  2020-01-12 20:20:11.933  INFO 3722 --- [           main] c.s.m.MongoRepositoryDemoApplication     : Started MongoRepositoryDemoApplication in 2.856 seconds (JVM running for 4.238)
+  2020-01-12 20:20:12.301  INFO 3722 --- [           main] org.mongodb.driver.connection            : Opened connection [connectionId{localValue:2, serverValue:7}] to localhost:27017
+  2020-01-12 20:20:12.478  INFO 3722 --- [           main] c.s.m.MongoRepositoryDemoApplication     : Coffee saved as Coffee(id=5e1b0efcffd5436180e4f02b, name=espresso, price=CNY 20.00, createTime=Sun Jan 12 20:20:11 CST 2020, updateTime=Sun Jan 12 20:20:11 CST 2020)
+  2020-01-12 20:20:12.479  INFO 3722 --- [           main] c.s.m.MongoRepositoryDemoApplication     : Coffee saved as Coffee(id=5e1b0efcffd5436180e4f02c, name=latte, price=CNY 30.00, createTime=Sun Jan 12 20:20:11 CST 2020, updateTime=Sun Jan 12 20:20:11 CST 2020)
+  2020-01-12 20:20:13.671  INFO 3722 --- [           main] c.s.m.MongoRepositoryDemoApplication     : Latte saved as Coffee(id=5e1b0efcffd5436180e4f02c, name=latte, price=CNY 35.00, createTime=Sun Jan 12 20:20:11 CST 2020, updateTime=Sun Jan 12 20:20:13 CST 2020)
+  2020-01-12 20:20:13.679  INFO 3722 --- [extShutdownHook] org.mongodb.driver.connection            : Closed connection [connectionId{localValue:2, serverValue:7}] to localhost:27017 because the pool has been closed.
+  ```
+
+---
 
 ## 在 Spring 中访问 Redis
 
