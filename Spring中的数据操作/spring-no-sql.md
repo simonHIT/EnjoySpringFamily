@@ -347,14 +347,6 @@
   - 通过 JedisPool 获得 Jedis 实例
   - 直接使用 Jedis 中的⽅方法
 
----
-
-```java
-
-```
-
----
-
 - 通过 Docker 启动 Redis
 
   - 官方指引
@@ -363,6 +355,154 @@
     - docker pull redis
   - 启动 Redis
     - docker run --name redis -d -p 6379:6379 redis
+
+---
+
+- cache-demo & cache-with-redis-demo
+- cache-demo application.properties
+
+```yml
+spring.jpa.hibernate.ddl-auto=none
+spring.jpa.properties.hibernate.show_sql=true
+spring.jpa.properties.hibernate.format_sql=true
+```
+
+- cache-with-redis-demo application.properties
+
+```yml
+spring.jpa.hibernate.ddl-auto=none
+spring.jpa.properties.hibernate.show_sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+management.endpoints.web.exposure.include=*
+
+spring.cache.type=redis
+spring.cache.cache-names=coffee
+spring.cache.redis.time-to-live=5000
+spring.cache.redis.cache-null-values=false
+
+spring.redis.host=localhost
+```
+
+- CoffeeService.java
+
+
+  ```java
+  @Slf4j
+  @Service
+  @CacheConfig(cacheNames = "coffee")
+  public class CoffeeService {
+      @Autowired
+      private CoffeeRepository coffeeRepository;
+
+      @Cacheable
+      public List<Coffee> findAllCoffee() {
+          return coffeeRepository.findAll();
+      }
+
+      @CacheEvict
+      public void reloadCoffee() {
+      }
+
+      public Optional<Coffee> findOneCoffee(String name) {
+          ExampleMatcher matcher = ExampleMatcher.matching()
+                  .withMatcher("name", exact().ignoreCase());
+          Optional<Coffee> coffee = coffeeRepository.findOne(
+                  Example.of(Coffee.builder().name(name).build(), matcher));
+          log.info("Coffee Found: {}", coffee);
+          return coffee;
+      }
+  }
+  ```
+
+- Application.java
+
+  ```java
+  @SpringBootApplication
+  @Slf4j
+  @EnableJpaRepositories
+  @EnableCaching(proxyTargetClass = true)
+  @EnableTransactionManagement
+  public class CacheWithRedisDemoApplication implements ApplicationRunner {
+
+      @Autowired
+      private CoffeeService coffeeService;
+
+      public static void main(String[] args) {
+          SpringApplication.run(CacheWithRedisDemoApplication.class, args);
+      }
+
+      @Override
+      public void run(ApplicationArguments args) throws Exception {
+
+          log.info("Count: {}", coffeeService.findAllCoffee().size());
+          for (int i = 0; i < 5; i++) {
+              log.info("Reading from cache.");
+              coffeeService.findAllCoffee();
+          }
+          Thread.sleep(5_000);
+          log.info("Reading after refresh.");
+          coffeeService.findAllCoffee().forEach(c -> log.info("Coffee {}", c.getName()));
+      }
+  }
+  ```
+- 运行结果
+
+  ```yml
+  2020-01-12 22:44:30.169  INFO 6243 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 97ms. Found 2 JPA repository interfaces.
+  2020-01-12 22:44:30.659  INFO 6243 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode!
+  2020-01-12 22:44:30.660  INFO 6243 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+  2020-01-12 22:44:30.749  INFO 6243 --- [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.simon.cachewithredisdemo.repository.CoffeeOrderRepository. If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository.
+  2020-01-12 22:44:30.751  INFO 6243 --- [           main] .RepositoryConfigurationExtensionSupport : Spring Data Redis - Could not safely identify store assignment for repository candidate interface com.simon.cachewithredisdemo.repository.CoffeeRepository. If you want this repository to be a Redis repository, consider annotating your entities with one of these annotations: org.springframework.data.redis.core.RedisHash (preferred), or consider extending one of the following types with your repository: org.springframework.data.keyvalue.repository.KeyValueRepository.
+  2020-01-12 22:44:30.751  INFO 6243 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 18ms. Found 0 Redis repository interfaces.
+  2020-01-12 22:44:31.775  INFO 6243 --- [           main] trationDelegate$BeanPostProcessorChecker : Bean 'org.springframework.transaction.annotation.ProxyTransactionManagementConfiguration' of type [org.springframework.transaction.annotation.ProxyTransactionManagementConfiguration] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+  2020-01-12 22:44:32.343  INFO 6243 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+  2020-01-12 22:44:32.704  INFO 6243 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+  2020-01-12 22:44:33.386  INFO 6243 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+  2020-01-12 22:44:33.746  INFO 6243 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate Core {5.4.9.Final}
+  2020-01-12 22:44:34.265  INFO 6243 --- [           main] o.hibernate.annotations.common.Version   : HCANN000001: Hibernate Commons Annotations {5.1.0.Final}
+  2020-01-12 22:44:34.645  INFO 6243 --- [           main] org.hibernate.dialect.Dialect            : HHH000400: Using dialect: org.hibernate.dialect.H2Dialect
+  2020-01-12 22:44:36.406  INFO 6243 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+  2020-01-12 22:44:36.453  INFO 6243 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+  2020-01-12 22:44:38.237  INFO 6243 --- [           main] c.s.c.CacheWithRedisDemoApplication      : Started CacheWithRedisDemoApplication in 10.701 seconds (JVM running for 12.158)
+  2020-01-12 22:44:38.516  INFO 6243 --- [           main] io.lettuce.core.EpollProvider            : Starting without optional epoll library
+  2020-01-12 22:44:38.518  INFO 6243 --- [           main] io.lettuce.core.KqueueProvider           : Starting without optional kqueue library
+  Hibernate: 
+      select
+          coffee0_.id as id1_0_,
+          coffee0_.create_time as create_t2_0_,
+          coffee0_.update_time as update_t3_0_,
+          coffee0_.name as name4_0_,
+          coffee0_.price as price5_0_ 
+      from
+          t_coffee coffee0_
+  2020-01-12 22:44:39.287  INFO 6243 --- [           main] c.s.c.CacheWithRedisDemoApplication      : Count: 5
+  2020-01-12 22:44:39.287  INFO 6243 --- [           main] c.s.c.CacheWithRedisDemoApplication      : Reading from cache.
+  2020-01-12 22:44:39.293  INFO 6243 --- [           main] c.s.c.CacheWithRedisDemoApplication      : Reading from cache.
+  2020-01-12 22:44:39.297  INFO 6243 --- [           main] c.s.c.CacheWithRedisDemoApplication      : Reading from cache.
+  2020-01-12 22:44:39.300  INFO 6243 --- [           main] c.s.c.CacheWithRedisDemoApplication      : Reading from cache.
+  2020-01-12 22:44:39.305  INFO 6243 --- [           main] c.s.c.CacheWithRedisDemoApplication      : Reading from cache.
+  2020-01-12 22:44:44.312  INFO 6243 --- [           main] c.s.c.CacheWithRedisDemoApplication      : Reading after refresh.
+  Hibernate: 
+      select
+          coffee0_.id as id1_0_,
+          coffee0_.create_time as create_t2_0_,
+          coffee0_.update_time as update_t3_0_,
+          coffee0_.name as name4_0_,
+          coffee0_.price as price5_0_ 
+      from
+          t_coffee coffee0_
+  2020-01-12 22:44:44.323  INFO 6243 --- [           main] c.s.c.CacheWithRedisDemoApplication      : Coffee espresso
+  2020-01-12 22:44:44.323  INFO 6243 --- [           main] c.s.c.CacheWithRedisDemoApplication      : Coffee latte
+  2020-01-12 22:44:44.323  INFO 6243 --- [           main] c.s.c.CacheWithRedisDemoApplication      : Coffee capuccino
+  2020-01-12 22:44:44.324  INFO 6243 --- [           main] c.s.c.CacheWithRedisDemoApplication      : Coffee mocha
+  2020-01-12 22:44:44.324  INFO 6243 --- [           main] c.s.c.CacheWithRedisDemoApplication      : Coffee macchiato
+  2020-01-12 22:44:44.331  INFO 6243 --- [extShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+  2020-01-12 22:44:44.334  INFO 6243 --- [extShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+  2020-01-12 22:44:44.338  INFO 6243 --- [extShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+  ```
+
+---
 
 - Redis 的哨兵与集群模式
 
@@ -390,17 +530,42 @@
 
 - 基于注解的缓存
 
-  - @EnableCaching
-    - @Cacheable
-    - @CacheEvict
-    - @CachePut
-    - @Caching
-    - @CacheConfig
+  - @EnableCaching(开启缓存)
+    - @Cacheable（声明缓存,如果缓存无目标值则添加缓存，有则取缓存值）
+    - @CacheEvict（清除缓存）
+    - @CachePut（无论缓存中是否有目标值，均添加至缓存）
+    - @Caching（缓存打包，配置多个缓存）
+    - @CacheConfig（缓存配置，缓存名称等属性配置）
 
 ---
 
-```java
-```
+  ```java
+  @Slf4j
+  @Service
+  @CacheConfig(cacheNames = "coffee")
+  public class CoffeeService {
+      @Autowired
+      private CoffeeRepository coffeeRepository;
+
+      @Cacheable
+      public List<Coffee> findAllCoffee() {
+          return coffeeRepository.findAll();
+      }
+
+      @CacheEvict
+      public void reloadCoffee() {
+      }
+
+      public Optional<Coffee> findOneCoffee(String name) {
+          ExampleMatcher matcher = ExampleMatcher.matching()
+                  .withMatcher("name", exact().ignoreCase());
+          Optional<Coffee> coffee = coffeeRepository.findOne(
+                  Example.of(Coffee.builder().name(name).build(), matcher));
+          log.info("Coffee Found: {}", coffee);
+          return coffee;
+      }
+  }
+  ```
 
 ---
 
@@ -408,18 +573,63 @@
 
 - pom依赖
 
-```xml
-```
+  ```xml
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-cache</artifactId>
+          </dependency>
+          <dependency>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-starter-data-redis</artifactId>
+          </dependency>
+  ```
 
 - application.properties
 
-```yml
-```
+  ```yml
+  spring.jpa.hibernate.ddl-auto=none
+  spring.jpa.properties.hibernate.show_sql=true
+  spring.jpa.properties.hibernate.format_sql=true
 
-- Application.java
+  management.endpoints.web.exposure.include=*
 
-```java
-```
+  spring.cache.type=redis
+  spring.cache.cache-names=coffee
+  spring.cache.redis.time-to-live=5000
+  spring.cache.redis.cache-null-values=false
+
+  spring.redis.host=localhost
+  ```
+
+- CoffeeService.java
+
+  ```java
+  @Slf4j
+  @Service
+  @CacheConfig(cacheNames = "coffee")
+  public class CoffeeService {
+      @Autowired
+      private CoffeeRepository coffeeRepository;
+
+      @Cacheable
+      public List<Coffee> findAllCoffee() {
+          return coffeeRepository.findAll();
+      }
+
+      @CacheEvict
+      public void reloadCoffee() {
+      }
+
+      public Optional<Coffee> findOneCoffee(String name) {
+          ExampleMatcher matcher = ExampleMatcher.matching()
+                  .withMatcher("name", exact().ignoreCase());
+          Optional<Coffee> coffee = coffeeRepository.findOne(
+                  Example.of(Coffee.builder().name(name).build(), matcher));
+          log.info("Coffee Found: {}", coffee);
+          return coffee;
+      }
+  }
+  ```
 
 - Redis 在 Spring 中的其他用法
 
@@ -447,6 +657,7 @@
 
 ---
 ---
+
 - Redis Repository
   - 实体注解
     - @RedisHash
