@@ -537,6 +537,13 @@ spring.redis.host=localhost
     - @Caching（缓存打包，配置多个缓存）
     - @CacheConfig（缓存配置，缓存名称等属性配置）
 
+- 缓存的使用场景
+
+- 对于经久不变（一天之内或更久）的数据，建议在页面内部做一个缓存，避免使用分布式缓存访问后端缓存的网络开销
+- 对于不经常变化或者允许变化有一定的延迟（一天之内或更久）的数据，建议在页面内部做一个缓存并设置一个失效时间
+- 对于经常变化且读写要求一致性的数据，建议使用redis等分布式高可用集群做一个缓存
+- 对于读写比例高的数据，可以使用redis等缓存，对于读写比例不好的数据（如1：1）等不建议使用缓存
+
 ---
 
   ```java
@@ -656,6 +663,140 @@ spring.redis.host=localhost
   - 一定注意设置过期时间！！！
 
 ---
+
+- CoffeeService.java
+
+  ```java
+  @Slf4j
+  @Service
+  public class CoffeeService {
+      private static final String CACHE = "springbucks-coffee";
+      @Autowired
+      private CoffeeRepository coffeeRepository;
+      @Autowired
+      private RedisTemplate<String, Coffee> redisTemplate;
+
+      public List<Coffee> findAllCoffee() {
+          return coffeeRepository.findAll();
+      }
+      public Optional<Coffee> findOneCoffeeByName(String name) {
+
+          HashOperations<String, Object, Coffee> hashOperations = redisTemplate.opsForHash();
+
+          if (redisTemplate.hasKey(CACHE) && hashOperations.hasKey(CACHE, name)) {
+
+              log.info("Get Coffee {} from redis.", name);
+
+              return (Optional<Coffee>) Optional.of(hashOperations.get(CACHE, name));
+              //return Optional.of(hashOperations.get(CACHE, name));
+          }
+
+          ExampleMatcher matcher = ExampleMatcher.matching().withMatcher("name", exact().ignoreCase());
+
+          Optional<Coffee> coffee = coffeeRepository.findOne(
+                  Example.of(Coffee.builder().name(name).build(), matcher)
+          );
+
+          log.info("Coffee found:{}", coffee);
+
+          if (coffee.isPresent()) {
+
+              log.info("Put coffee {} to Redis.", name);
+              hashOperations.put(CACHE, name, coffee.get());
+              redisTemplate.expire(CACHE, 1, TimeUnit.MINUTES);
+          }
+
+          return coffee;
+      }
+  }
+  ```
+
+- Application.java
+
+  ```java
+  @EnableTransactionManagement
+  @Slf4j
+  @EnableJpaRepositories
+  @SpringBootApplication
+  public class RedisDemoApplication implements ApplicationRunner {
+
+      @Autowired
+      private CoffeeService coffeeService;
+
+      public static void main(String[] args) {
+          SpringApplication.run(RedisDemoApplication.class, args);
+      }
+
+      @Bean
+      public RedisTemplate<String, Coffee> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
+          RedisTemplate<String, Coffee> redisTemplate = new RedisTemplate<>();
+          redisTemplate.setConnectionFactory(redisConnectionFactory);
+          return redisTemplate;
+      }
+
+      @Bean
+      public LettuceClientConfigurationBuilderCustomizer customizer() {
+
+          return builder -> builder.readFrom(ReadFrom.MASTER_PREFERRED);
+      }
+
+      @Override
+      public void run(ApplicationArguments args) throws Exception {
+
+          Optional<Coffee> mocha = coffeeService.findOneCoffeeByName("mocha");
+
+          log.info("Coffee {}.", mocha);
+
+          for (int i = 0; i < 5; i++) {
+              mocha = coffeeService.findOneCoffeeByName("mocha");
+          }
+
+          log.info("Value form Redis:{}", mocha);
+      }
+  }
+
+  ```
+
+- 运行结果
+
+  ```yml
+  2020-02-16 21:45:09.235  INFO 4521 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+  2020-02-16 21:45:09.479  INFO 4521 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+  2020-02-16 21:45:09.848  INFO 4521 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+  2020-02-16 21:45:10.038  INFO 4521 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate Core {5.4.10.Final}
+  2020-02-16 21:45:10.442  INFO 4521 --- [           main] o.hibernate.annotations.common.Version   : HCANN000001: Hibernate Commons Annotations {5.1.0.Final}
+  2020-02-16 21:45:10.630  INFO 4521 --- [           main] org.hibernate.dialect.Dialect            : HHH000400: Using dialect: org.hibernate.dialect.H2Dialect
+  2020-02-16 21:45:12.087  INFO 4521 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+  2020-02-16 21:45:12.101  INFO 4521 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+  2020-02-16 21:45:14.004  INFO 4521 --- [           main] c.simon.redisdemo.RedisDemoApplication   : Started RedisDemoApplication in 8.444 seconds (JVM running for 9.99)
+  2020-02-16 21:45:14.216  INFO 4521 --- [           main] io.lettuce.core.EpollProvider            : Starting without optional epoll library
+  2020-02-16 21:45:14.218  INFO 4521 --- [           main] io.lettuce.core.KqueueProvider           : Starting without optional kqueue library
+  Hibernate: 
+      select
+          coffee0_.id as id1_0_,
+          coffee0_.create_time as create_t2_0_,
+          coffee0_.update_time as update_t3_0_,
+          coffee0_.name as name4_0_,
+          coffee0_.price as price5_0_ 
+      from
+          t_coffee coffee0_ 
+      where
+          lower(coffee0_.name)=?
+  2020-02-16 21:45:14.839  INFO 4521 --- [           main] c.simon.redisdemo.service.CoffeeService  : Coffee found:Optional[Coffee(super=BaseEntity(id=4, createTime=2020-02-16 21:45:09.62, updateTime=2020-02-16 21:45:09.62), name=mocha, price=CNY 30.00)]
+  2020-02-16 21:45:14.839  INFO 4521 --- [           main] c.simon.redisdemo.service.CoffeeService  : Put coffee mocha to Redis.
+  2020-02-16 21:45:14.857  INFO 4521 --- [           main] c.simon.redisdemo.RedisDemoApplication   : Coffee Optional[Coffee(super=BaseEntity(id=4, createTime=2020-02-16 21:45:09.62, updateTime=2020-02-16 21:45:09.62), name=mocha, price=CNY 30.00)].
+  2020-02-16 21:45:14.862  INFO 4521 --- [           main] c.simon.redisdemo.service.CoffeeService  : Get Coffee mocha from redis.
+  2020-02-16 21:45:14.875  INFO 4521 --- [           main] c.simon.redisdemo.service.CoffeeService  : Get Coffee mocha from redis.
+  2020-02-16 21:45:14.884  INFO 4521 --- [           main] c.simon.redisdemo.service.CoffeeService  : Get Coffee mocha from redis.
+  2020-02-16 21:45:14.893  INFO 4521 --- [           main] c.simon.redisdemo.service.CoffeeService  : Get Coffee mocha from redis.
+  2020-02-16 21:45:14.899  INFO 4521 --- [           main] c.simon.redisdemo.service.CoffeeService  : Get Coffee mocha from redis.
+  2020-02-16 21:45:14.903  INFO 4521 --- [           main] c.simon.redisdemo.RedisDemoApplication   : Value form Redis:Optional[Coffee(super=BaseEntity(id=4, createTime=2020-02-16 21:45:09.62, updateTime=2020-02-16 21:45:09.62), name=mocha, price=CNY 30.00)]
+  2020-02-16 21:45:15.036  INFO 4521 --- [extShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+  2020-02-16 21:45:15.043  INFO 4521 --- [extShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+  2020-02-16 21:45:15.052  INFO 4521 --- [extShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+
+  ```
+
 ---
 
 - Redis Repository
@@ -671,6 +812,192 @@ spring.redis.host=localhost
     - 扫描不同的包
 
 ---
+
+- BytesToMoneyConverter.java
+
+  ```java
+  @ReadingConverter
+  public class BytesToMoneyConverter implements Converter<byte[], Money> {
+      @Override
+      public Money convert(byte[] source) {
+          String value = new String(source, StandardCharsets.UTF_8);
+          return Money.ofMinor(CurrencyUnit.of("CNY"), Long.parseLong(value));
+      }
+  }
+  ```
+
+- MoneyToBytesConverter.java
+  
+  ```java
+  @WritingConverter
+  public class MoneyToBytesConverter implements Converter<Money, byte[]> {
+      @Override
+      public byte[] convert(Money source) {
+          String value = Long.toString(source.getAmountMinorLong());
+          return value.getBytes(StandardCharsets.UTF_8);
+      }
+  }
+  ```
+
+- CoffeeCache.java
+
+  ```java
+  @RedisHash(value = "springbucks-coffee", timeToLive = 60)
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  @Builder
+  public class CoffeeCache {
+      @Id
+      private Long id;
+      @Indexed
+      private String name;
+      private Money price;
+  }
+  ```
+
+- CoffeeCacheRepository.java
+
+  ```java
+  public interface CoffeeCacheRepository extends CrudRepository<CoffeeCache, Long> {
+      Optional<CoffeeCache> findOneByName(String name);
+  }
+  ```
+
+- CoffeeService.java
+
+  ```java
+  @Slf4j
+  @Service
+  public class CoffeeService {
+      @Autowired
+      private CoffeeRepository coffeeRepository;
+      @Autowired
+      private CoffeeCacheRepository cacheRepository;
+
+      public List<Coffee> findAllCoffee() {
+          return coffeeRepository.findAll();
+      }
+
+      public Optional<Coffee> findSimpleCoffeeFromCache(String name) {
+          Optional<CoffeeCache> cached = cacheRepository.findOneByName(name);
+          if (cached.isPresent()) {
+              CoffeeCache coffeeCache = cached.get();
+              Coffee coffee = Coffee.builder()
+                      .name(coffeeCache.getName())
+                      .price(coffeeCache.getPrice())
+                      .build();
+              log.info("Coffee {} found in cache.", coffeeCache);
+              return Optional.of(coffee);
+          } else {
+              Optional<Coffee> raw = findOneCoffee(name);
+              raw.ifPresent(c -> {
+                  CoffeeCache coffeeCache = CoffeeCache.builder()
+                          .id(c.getId())
+                          .name(c.getName())
+                          .price(c.getPrice())
+                          .build();
+                  log.info("Save Coffee {} to cache.", coffeeCache);
+                  cacheRepository.save(coffeeCache);
+              });
+              return raw;
+          }
+      }
+
+      public Optional<Coffee> findOneCoffee(String name) {
+          ExampleMatcher matcher = ExampleMatcher.matching()
+                  .withMatcher("name", exact().ignoreCase());
+          Optional<Coffee> coffee = coffeeRepository.findOne(
+                  Example.of(Coffee.builder().name(name).build(), matcher));
+          log.info("Coffee Found: {}", coffee);
+          return coffee;
+      }
+  }
+  ```
+
+- Application.java
+
+  ```java
+  @Slf4j
+  @EnableTransactionManagement
+  @EnableJpaRepositories
+  @SpringBootApplication
+  @EnableRedisRepositories
+  public class RedisRepositoryDemoApplication implements ApplicationRunner {
+
+      @Autowired
+      private CoffeeService coffeeService;
+
+      public static void main(String[] args) {
+          SpringApplication.run(RedisRepositoryDemoApplication.class, args);
+      }
+
+      @Bean
+      public LettuceClientConfigurationBuilderCustomizer customizer(){
+
+          return builer->builer.readFrom(ReadFrom.MASTER_PREFERRED);
+      }
+
+      @Bean
+      public RedisCustomConversions redisCustomConversions(){
+          return new RedisCustomConversions(
+                  Arrays.asList(new BytesToMoneyConverter(),new MoneyToBytesConverter())
+          );
+      }
+
+      @Override
+      public void run(ApplicationArguments args) throws Exception {
+          Optional<Coffee> c = coffeeService.findSimpleCoffeeFromCache("mocha");
+          log.info("Coffee {}", c);
+
+          for (int i = 0; i < 5; i++) {
+              c = coffeeService.findSimpleCoffeeFromCache("mocha");
+          }
+
+          log.info("Value from Redis: {}", c);
+      }
+  }
+  ```
+
+- 运行结果
+
+  ```yml
+  2020-02-16 22:13:12.804  INFO 4742 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+  2020-02-16 22:13:13.046  INFO 4742 --- [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+  2020-02-16 22:13:13.695  INFO 4742 --- [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+  2020-02-16 22:13:14.010  INFO 4742 --- [           main] org.hibernate.Version                    : HHH000412: Hibernate Core {5.4.10.Final}
+  2020-02-16 22:13:14.696  INFO 4742 --- [           main] o.hibernate.annotations.common.Version   : HCANN000001: Hibernate Commons Annotations {5.1.0.Final}
+  2020-02-16 22:13:15.107  INFO 4742 --- [           main] org.hibernate.dialect.Dialect            : HHH000400: Using dialect: org.hibernate.dialect.H2Dialect
+  2020-02-16 22:13:17.045  INFO 4742 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+  2020-02-16 22:13:17.081  INFO 4742 --- [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+  2020-02-16 22:13:19.753  INFO 4742 --- [           main] c.s.r.RedisRepositoryDemoApplication     : Started RedisRepositoryDemoApplication in 10.733 seconds (JVM running for 12.291)
+  2020-02-16 22:13:20.101  INFO 4742 --- [           main] io.lettuce.core.EpollProvider            : Starting without optional epoll library
+  2020-02-16 22:13:20.103  INFO 4742 --- [           main] io.lettuce.core.KqueueProvider           : Starting without optional kqueue library
+  Hibernate: 
+      select
+          coffee0_.id as id1_0_,
+          coffee0_.create_time as create_t2_0_,
+          coffee0_.update_time as update_t3_0_,
+          coffee0_.name as name4_0_,
+          coffee0_.price as price5_0_ 
+      from
+          t_coffee coffee0_ 
+      where
+          lower(coffee0_.name)=?
+  2020-02-16 22:13:21.069  INFO 4742 --- [           main] c.s.r.service.CoffeeService              : Coffee Found: Optional[Coffee(super=BaseEntity(id=4, createTime=2020-02-16 22:13:13.125, updateTime=2020-02-16 22:13:13.125), name=mocha, price=CNY 30.00)]
+  2020-02-16 22:13:21.070  INFO 4742 --- [           main] c.s.r.service.CoffeeService              : Save Coffee CoffeeCache(id=4, name=mocha, price=CNY 30.00) to cache.
+  2020-02-16 22:13:21.155  INFO 4742 --- [           main] c.s.r.RedisRepositoryDemoApplication     : Coffee Optional[Coffee(super=BaseEntity(id=4, createTime=2020-02-16 22:13:13.125, updateTime=2020-02-16 22:13:13.125), name=mocha, price=CNY 30.00)]
+  2020-02-16 22:13:21.212  INFO 4742 --- [           main] c.s.r.service.CoffeeService              : Coffee CoffeeCache(id=4, name=mocha, price=CNY 30.00) found in cache.
+  2020-02-16 22:13:21.227  INFO 4742 --- [           main] c.s.r.service.CoffeeService              : Coffee CoffeeCache(id=4, name=mocha, price=CNY 30.00) found in cache.
+  2020-02-16 22:13:21.247  INFO 4742 --- [           main] c.s.r.service.CoffeeService              : Coffee CoffeeCache(id=4, name=mocha, price=CNY 30.00) found in cache.
+  2020-02-16 22:13:21.260  INFO 4742 --- [           main] c.s.r.service.CoffeeService              : Coffee CoffeeCache(id=4, name=mocha, price=CNY 30.00) found in cache.
+  2020-02-16 22:13:21.271  INFO 4742 --- [           main] c.s.r.service.CoffeeService              : Coffee CoffeeCache(id=4, name=mocha, price=CNY 30.00) found in cache.
+  2020-02-16 22:13:21.271  INFO 4742 --- [           main] c.s.r.RedisRepositoryDemoApplication     : Value from Redis: Optional[Coffee(super=BaseEntity(id=null, createTime=null, updateTime=null), name=mocha, price=CNY 30.00)]
+  2020-02-16 22:13:21.412  INFO 4742 --- [extShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+  2020-02-16 22:13:21.415  INFO 4742 --- [extShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+  2020-02-16 22:13:21.420  INFO 4742 --- [extShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+  ```
+
 ---
 
 ## SpringBucks 进度⼩结
