@@ -115,18 +115,18 @@
 
     - 详细参数
 
-      - https://docs.spring.io/spring/docs/5.1.5.RELEASE/spring-framework-reference/web.html#mvc-ann-arguments
-      
+      - <https://docs.spring.io/spring/docs/5.1.5.RELEASE/spring-framework-reference/web.html#mvc-ann-arguments>
+
     - 详细返回
 
-    - https://docs.spring.io/spring/docs/5.1.5.RELEASE/spring-framework-reference/web.html#mvc-ann-return-types
+    - <https://docs.spring.io/spring/docs/5.1.5.RELEASE/spring-framework-reference/web.html#mvc-ann-return-types>
 
 ---
-
-- 方法示例
   
-  ![Controller](images/spring-mvc-explore-07.png)
-  ![Controller](images/spring-mvc-explore-08.png)
+  - 方法示例
+  
+    ![Controller](images/spring-mvc-explore-07.png)
+    ![Controller](images/spring-mvc-explore-08.png)
 
 ---
 
@@ -213,7 +213,7 @@
 - Spring MVC 支持的视图
   - 支持的视图列表
 
-    - https://docs.spring.io/spring/docs/5.1.5.RELEASE/spring-framework-reference/web.html#mvc-view
+    - <https://docs.spring.io/spring/docs/5.1.5.RELEASE/spring-framework-reference/web.html#mvc-view>
 
     - Jackson-based JSON / XML
 
@@ -281,3 +281,127 @@
 ---
 
 ## 静态资源与缓存
+
+- Spring Boot 中的静态资源配置
+  - 核心逻辑
+
+    - WebMvcConfigurer.addResourceHandlers()
+  - 常⽤配置
+
+    - spring.mvc.static-path-pattern=/**
+
+    - spring.resources.static-locations=classpath:/META-INF/resources/,classpath:/resources/,classpath:/static/,classpath:/public/
+
+## Spring Boot 中的缓存配置
+
+- 常⽤配置（默认时间单位都是秒）
+
+  - ResourceProperties.Cache
+
+  - spring.resources.cache.cachecontrol.max-age=时间
+
+  - spring.resources.cache.cachecontrol.no-cache=true/false
+
+  - spring.resources.cache.cachecontrol.s-max-age=时间
+
+- Controller 中⼿工设置缓存
+  
+  ![Controller 中⼿工设置缓存](images/spring-mvc-explore-11.png)
+
+  ---
+  ---
+
+- 建议的资源访问方式
+  
+  ![建议的资源访问方式](images/spring-mvc-explore-12.png)
+
+## Spring MVC 中的各种机制-异常处理
+
+- Spring MVC 的异常解析
+  - 核心接⼝
+
+    - HandlerExceptionResolver
+  - 实现类
+
+    - SimpleMappingExceptionResolver
+
+    - DefaultHandlerExceptionResolver
+
+    - ResponseStatusExceptionResolver
+
+    - ExceptionHandlerExceptionResolver
+  
+  - 异常处理方法
+  
+    - 处理方法
+
+      - @ExceptionHandler
+    - 添加位置
+
+      - @Controller / @RestController
+
+      - @ControllerAdvice / @RestControllerAdvice
+
+---
+---
+
+## 了解 Spring MVC 的切入点
+
+- Spring MVC 的拦截器
+
+  - 核心接⼝
+
+    - HandlerInteceptor
+
+    - boolean preHandle()
+
+    - void postHandle()
+
+    - void afterCompletion()
+  
+  - 针对 @ResponseBody 和 ResponseEntity 的情况
+
+    - ResponseBodyAdvice
+  
+  - 针对异步请求的接⼝
+
+    - AsyncHandlerInterceptor
+
+    - void afterConcurrentHandlingStarted()
+
+  - 拦截器的配置方式
+  
+    - 常规方法
+
+      - WebMvcConfigurer.addInterceptors()
+  
+    - Spring Boot 中的配置
+
+      - 创建⼀一个带 @Configuration 的 WebMvcConfigurer 配置类
+
+      - 不能带 @EnableWebMvc（想彻底自己控制 MVC 配置除外）
+
+---
+---
+
+---
+
+## SpringBucks 进度小结
+
+- 本章小结
+
+  - 解释了什么是 Spring 的 ApplicationContext
+
+  - 了解了 Spring MVC 的基本使⽤
+
+  - 理解 Spring MVC 的多种机制
+
+- SpringBucks 进度小结
+
+  - 拆分了 waiter-service
+
+  - 增加了更多 REST ⽅方法
+
+  - 增加了缓存、性能日志与异常处理
+  
+---
