@@ -16,7 +16,7 @@
 
 ### Richardson 成熟度模型
 
-![Richardson 成熟度模型](images/spring-rest-webservice-01.png)
+![Richardson 成熟度模型](images\spring-rest-webservice-01.png)
 
 ### 如何实现 Restful Web Service
 
