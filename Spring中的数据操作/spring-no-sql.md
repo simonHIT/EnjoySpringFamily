@@ -1,5 +1,11 @@
 # NoSQL 实践
 
+[TOC]
+
+------
+
+
+
 ## 通过 Docker 辅助开发
 
 - 什么是容器
@@ -81,9 +87,10 @@
   
 - 初始化 MongoDB 的库及权限
   - 创建库
+    
     - use springbucks;
-  - 创建⽤用户
-
+- 创建⽤用户
+  
     ```sql
     db.createUser(
     {
@@ -225,13 +232,12 @@
     - PagingAndSortingRepository<T, ID>
     - CrudRepository<T, ID>
 
-
 ---
 
 - mongo-repository-demo
 
 - application.properties
-    
+  
   ```yml
     spring.data.mongodb.uri=mongodb://springbucks:springbucks@localhost:27017/springbucks
   ```
@@ -243,7 +249,7 @@
   ```
 
 - MoneyReadConvertor.java
- 
+
   ```java
   同mongo-demo
   ```

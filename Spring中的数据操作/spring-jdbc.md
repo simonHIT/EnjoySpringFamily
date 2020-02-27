@@ -1,5 +1,11 @@
 # JDBC必知必会
 
+[TOC]
+
+------
+
+
+
 ## 如何配置数据源 
 
 1. Spring Boot 的配置演示 
@@ -7,43 +13,44 @@
    - 引⼊ JDBC 依赖——spring-boot-starter-jdbc 
    - 获取 DataSource Bean，打印信息 
    - 也可通过 /acturator/beans 查看 Bean 
-  
-    ![spring boot 配置演示](images/spring-jdbc-01.png)
-
-    - 运行代码
-
+    
+   
+ ![spring boot 配置演示](images/spring-jdbc-01.png)
+   
+ - 运行代码
+   
     ```java
     @SpringBootApplication
     @Slf4j
-    public class DatasourceDemoApplication implements CommandLineRunner {
-
+ public class DatasourceDemoApplication implements CommandLineRunner {
+	
 	    @Autowired
-	    private DataSource dataSource;
-
+    private DataSource dataSource;
+	
 	    @Autowired
-	    private JdbcTemplate jdbcTemplate;
-
+    private JdbcTemplate jdbcTemplate;
+	
 	    public static void main(String[] args) {
 		    SpringApplication.run(DatasourceDemoApplication.class, args);
-	    }
-
+    }
+	
 	    @Override
-	    public void run(String... args) throws Exception {
-
+    public void run(String... args) throws Exception {
+	
 		    log.info(dataSource.toString());
 		    Connection connection=dataSource.getConnection();
 		    log.info(connection.toString());
-		    connection.close();
-
-	    }
-    }
-
-    ```
-
+	    connection.close();
+	
+       }
+ }
+   
+ ```
+   
    - 启动项目我们可以看到spring boot默认为我们配置好了数据源
    - 运行结果
-    ![运行结果](images/spring-jdbc-03.png)
-
+ ![运行结果](images/spring-jdbc-03.png)
+   
 2. 直接配置所需的Bean 
 
    - 数据源相关 
@@ -125,14 +132,15 @@
 		    log.info(connection.toString());
 		    connection.close();
 	    }
+	```
 
 
 	    public void showData(){
-
+	
 		    jdbcTemplate.queryForList("SELECT * FROM FOO")
 				    .forEach(row->log.info(row.toString()));
 	    }
-    }
+	}
   ```
 - 运行结果
   ![运行结果](images/spring-jdbc-03.png)
@@ -174,7 +182,7 @@
   bar.datasource.password=
   ```
   - 主启动类
-  
+
   ```java
   @SpringBootApplication(exclude = {
         DataSourceAutoConfiguration.class,
@@ -857,18 +865,20 @@
   @RunWith(SpringRunner.class)
   @SpringBootTest
   class ErrorcodeDemoApplicationTests {
+  ```
 
 
       @Autowired
       private JdbcTemplate jdbcTemplate;
-
+    
       @Test(expected = CustomDuplicateKeyException.class)
-
+    
       public void contextLoads() {
-
+    
           jdbcTemplate.execute("INSERT INTO FOO (ID,BAR) VALUES (1,'A')");
           jdbcTemplate.execute("INSERT INTO FOO (ID,BAR) VALUES (1,'B')");
       }
   }
   ```
 ---
+  ```

@@ -1,16 +1,22 @@
 # O/R Mapping 实践
 
+[TOC]
+
+------
+
+
+
 ## 认识 Spring Data JPA
 
 - 对象与关系的范式不匹配,由此诞生了jpa的开发需求
 
-    ||Object|RDBMS
-    |---|---|---
-    粒度 |类 |表
-    继承 |有 |没有
-    唯⼀性 |a == b  |主键
-    关联 |引⽤ |外键
-    数据访问 |逐级访问（通过对象属性访问） |SQL 数量要少(通过join链接访问)
+    |          | Object                       | RDBMS                          |
+    | -------- | ---------------------------- | ------------------------------ |
+    | 粒度     | 类                           | 表                             |
+    | 继承     | 有                           | 没有                           |
+    | 唯⼀性   | a == b                       | 主键                           |
+    | 关联     | 引⽤                         | 外键                           |
+    | 数据访问 | 逐级访问（通过对象属性访问） | SQL 数量要少(通过join链接访问) |
 
 
 - Hibernate
@@ -89,11 +95,12 @@
   
 - 项⽬中的对象实体 
   - 实体 
+    
     - 咖啡、订单、顾客、服务员、咖啡师 
-  - 实体关系
-
-    ![实体关系](images/spring-ormapping-05.png)
-
+- 实体关系
+  
+  ![实体关系](images/spring-ormapping-05.png)
+  
 - 状态图
 
     ![状态图](images/spring-ormapping-06.png)
@@ -176,12 +183,13 @@
   @NoArgsConstructor
   @Builder
   public class Coffee implements Serializable {
+  ```
 
 
       @Id
       @GeneratedValue
       private Long id;
-
+    
       private String name;
 
 
@@ -189,11 +197,11 @@
       @Type(type = "org.jadira.usertype.moneyandcurrency.joda.PersistentMoneyAmount",
               parameters = {@org.hibernate.annotations.Parameter(name = "currencyCode", value = "CNY")})
       private Money price;
-
+    
       @Column(updatable = false)
       @CreationTimestamp
       private Date createTime;
-
+    
       @UpdateTimestamp
       private Date updateTime;
   }
@@ -490,13 +498,14 @@
   public class CoffeeOrder extends BaseEntity implements Serializable {
 
       private String customer;
+  ```
 
 
       @ManyToMany
       @JoinTable(name = "T_ORDER_COFFEE")
       @OrderBy("id")
       private List<Coffee> items;
-
+    
       @Enumerated
       @Column(nullable = false)
       private OrderState state;
@@ -596,6 +605,7 @@
           coffeeOrderRepository.save(order);
           log.info("Order: {}", order);
       }
+  ```
 
 
 
@@ -603,23 +613,23 @@
           coffeeRepository
                   .findAll(Sort.by(Sort.Direction.DESC, "id"))
                   .forEach(c -> log.info("Loading {}", c));
-
+    
           List<CoffeeOrder> list = coffeeOrderRepository.findTop3ByOrderByUpdateTimeDescIdAsc();
           log.info("findTop3ByOrderByUpdateTimeDescIdAsc: {}", getJoinedOrderId(list));
-
+    
           list = coffeeOrderRepository.findByCustomerOrderById("Li Lei");
           log.info("findByCustomerOrderById: {}", getJoinedOrderId(list));
-
+    
           // 不开启事务会因为没Session而报LazyInitializationException
           list.forEach(o -> {
               log.info("Order {}", o.getId());
               o.getItems().forEach(i -> log.info("  Item {}", i));
           });
-
+    
           list = coffeeOrderRepository.findByItems_Name("latte");
           log.info("findByItems_Name: {}", getJoinedOrderId(list));
       }
-
+    
       private String getJoinedOrderId(List<CoffeeOrder> list) {
           return list.stream().map(o -> o.getId().toString())
                   .collect(Collectors.joining(","));
@@ -629,7 +639,7 @@
 
 - 运行结果
 
-```yml
+​```yml
 2019-12-19 23:13:12.288  INFO 1477 --- [           main] org.hibernate.dialect.Dialect            : HHH000400: Using dialect: org.hibernate.dialect.H2Dialect
 Hibernate: 
     
@@ -683,7 +693,7 @@ Hibernate:
        foreign key (coffee_order_id) 
        references t_order
 2019-12-19 23:13:14.386  INFO 1477 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
-```
+  ```
 
 ---
 
@@ -742,7 +752,7 @@ Hibernate:
                     .build();
             orderRepository.save(order);
             log.info("Order: {}", order);
-
+    
             order = CoffeeOrder.builder()
                     .customer("Li Lei")
                     .items(Arrays.asList(espresso, latte))
@@ -762,10 +772,10 @@ Hibernate:
     offeeRepository
                     .findAll(Sort.by(Sort.Direction.DESC, "id"))
                     .forEach(c -> log.info("Loading {}", c));
-
+    
             List<CoffeeOrder> list = orderRepository.findTop3ByOrderByUpdateTimeDescIdAsc();
             log.info("findTop3ByOrderByUpdateTimeDescIdAsc: {}", getJoinedOrderId(list));
-
+    
             list = orderRepository.findByCustomerOrderById("Li Lei");
             log.info("findByCustomerOrderById: {}", getJoinedOrderId(list));
     ```
@@ -832,7 +842,7 @@ Hibernate:
 ---
 
     ```java
-
+    
     @Mapper
     public interface CoffeeMapper {
 
@@ -841,7 +851,7 @@ Hibernate:
                 + "values (#{name}, #{price}, now(), now())")
         @Options(useGeneratedKeys = true,keyProperty = "id")
         int save(Coffee coffee);
-
+    
         @Select("select * from t_coffee where id = #{id}")
         @Results({
                 @Result(id = true, column = "id", property = "id"),

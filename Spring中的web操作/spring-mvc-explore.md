@@ -1,8 +1,14 @@
 # 谈谈 Web 那些事-Spring MVC 实践
 
+[TOC]
+
+------
+
+
+
 ## 编写第一个Spring MVC Controller
 
-- 认识 Spring MVC
+- ### 认识 Spring MVC
 
   - DispatcherServlet
 
@@ -18,7 +24,7 @@
 
   - HandlerMapping
 
-- Spring MVC 中的常⽤用注解
+- ### Spring MVC 中的常⽤注解
 
   - @Controller
 
@@ -37,13 +43,13 @@
 
 ## 理解 Spring 的应⽤上下⽂
 
-- Spring 的应⽤程序上下⽂
+- ### Spring 的应⽤程序上下⽂
   
   ![Spring 的应⽤程序上下⽂](images/spring-mvc-explore-01.png)
 
   ![Spring 的应⽤程序上下⽂](images/spring-mvc-explore-02.png)
 
-- 关于上下文常用的接⼝
+- ### 关于上下文常用的接⼝
 
   - BeanFactory
 
@@ -59,7 +65,7 @@
 
   - WebApplicationContext
 
-- Web 上下文层次
+- ### Web 上下文层次
 
   ![Web 上下文层次](images/spring-mvc-explore-03.png)
 
@@ -72,23 +78,24 @@
 
 ## Spring MVC 中的各种机制-请求处理
 
-- Spring MVC 的请求处理流程
+- ### Spring MVC 的请求处理流程
 
   ![请求处理流程](images/spring-mvc-explore-06.png)
 
-- 一个请求的大致处理流程
-  - 绑定一些 Attribute
-
+- ### 一个请求的大致处理流程
+  
+1. 绑定一些 Attribute
+  
     - WebApplicationContext / LocaleResolver / ThemeResolver
-  - 处理 Multipart
-
+2. 处理 Multipart
+  
     - 如果是，则将请求转为 MultipartHttpServletRequest
-  - Handler 处理
-
+3. Handler 处理
+  
     - 如果找到对应 Handler，执⾏ Controller 及前后置处理器逻辑
-  - 处理返回的 Model ，呈现视图
+4. 处理返回的 Model ，呈现视图
 
-- 如何定义处理方法
+- ### 如何定义处理方法
 
   - 定义映射关系
     - @Controller
@@ -122,7 +129,7 @@
     - <https://docs.spring.io/spring/docs/5.1.5.RELEASE/spring-framework-reference/web.html#mvc-ann-return-types>
 
 ---
-  
+
   - 方法示例
   
     ![Controller](images/spring-mvc-explore-07.png)
@@ -161,7 +168,7 @@
 
 ## Spring MVC 中的各种机制-视图处理
 
-- 视图解析的实现基础
+- ### 视图解析的实现基础
   
   - ViewResolver 与 View 接⼝
 
