@@ -72,7 +72,7 @@
 
   - ParameterizedTypeReference<T>
 
-    ![解析泛型](images\spring-rest-template-05.png)
+    ![解析泛型](images/spring-rest-template-05.png)
 
   ------
 
@@ -109,7 +109,7 @@
   
 - 连接复⽤
 
-  ![连接复用](images\spring-rest-template-06.png)
+  ![连接复用](images/spring-rest-template-06.png)
 
   > - 默认实现
   >

@@ -8,15 +8,15 @@
 
 ## 设计好的 RESTful Web Service
 
-> “REST提供了了⼀一组架构约束，当作为⼀一个整体来应⽤用时，强调组件交互的
-> 可伸缩性、接⼝口的通⽤用性、组件的独⽴立部署、以及⽤用来减少交互延迟、增
-> 强安全性、封装遗留留系统的中间组件。”							
+> “REST提供了了一组架构约束，当作为⼀个整体来应用时，强调组件交互的
+> 可伸缩性、接⼝的通⽤性、组件的独立部署、以及用来减少交互延迟、增
+> 强安全性、封装遗留系统的中间组件。”							
 >
 > ​																									- Roy Thomas Fielding
 
 ### Richardson 成熟度模型
 
-![Richardson 成熟度模型](images\spring-rest-webservice-01.png)
+![Richardson 成熟度模型](images/spring-rest-webservice-01.png)
 
 ### 如何实现 Restful Web Service
 
@@ -141,7 +141,7 @@
 
 #### HATEOAS 示例
 
-![HATEOAS 示例](images\spring-rest-webservice-02.png)
+![HATEOAS 示例](images/spring-rest-webservice-02.png)
 
 ### 常⽤的超链接类型
 
