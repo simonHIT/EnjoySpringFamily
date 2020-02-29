@@ -73,7 +73,7 @@
 
     - mongodb-driver-reactivestreams
 
-  - Spring Data MongoDB 中主要的⽀支持
+  - Spring Data MongoDB 中主要的支持
 
     - ReactiveMongoClientFactoryBean
 
