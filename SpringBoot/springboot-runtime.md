@@ -61,6 +61,7 @@
 ### Spring Boot ⾃带的 Health Indicator 
 
 - ⽬的 
+  
   - 检查应⽤程序的运⾏状态 
 - 状态 
   - DOWN - 503 
@@ -339,7 +340,7 @@
 - 其中不包含
   - JDK / JRE 
 
-![认识可执⾏ Jar](images/springboot-runtime-02.png)
+<img src="images/springboot-runtime-02.png" alt="认识可执⾏ Jar" style="zoom: 50%;" />
 
 ### 如何找到程序的⼊⼝ 
 
@@ -410,7 +411,7 @@
 
 ### dockerﬁle-maven-plugin
 
-![dockerﬁle-maven-plugin](images/springboot-runtime-04.png)
+<img src="images/springboot-runtime-04.png" alt="dockerﬁle-maven-plugin" style="zoom:50%;" />
 
 ------
 
