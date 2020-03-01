@@ -96,7 +96,7 @@
 
 ### 通过配置定制 Feign 
 
-<img src="/Users/simon/markdown-workspace/EnjoySpringFamily/SpringCloud/images/service-register-discover-01.png" alt="通过配置定制 Feign" style="zoom:50%;" />
+<img src="images/service-register-discover-01.png" alt="通过配置定制 Feign" style="zoom:50%;" />
 
 ### Feign 的⼀些其他配置 
 

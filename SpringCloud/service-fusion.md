@@ -25,7 +25,7 @@
 
 ### Netﬂix Hystrix 
 
-<img src="/Users/simon/markdown-workspace/EnjoySpringFamily/SpringCloud/images/service-fusion-02.png" alt="Netﬂix Hystrix" style="zoom:80%;" />
+<img src="images/service-fusion-02.png" alt="Netﬂix Hystrix" style="zoom:80%;" />
 
 
 
