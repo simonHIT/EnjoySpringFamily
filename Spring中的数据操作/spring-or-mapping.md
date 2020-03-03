@@ -718,7 +718,7 @@ Hibernate:
 ---
 
 ```java
-            Coffee latte = Coffee.builder().name("latte")
+	           Coffee latte = Coffee.builder().name("latte")
                     .price(Money.of(CurrencyUnit.of("CNY"), 30.0))
                     .build();
             coffeeRepository.save(latte);
@@ -729,13 +729,15 @@ Hibernate:
                     .build();
             coffeeRepository.save(espresso);
             log.info("Coffee: {}", espresso);
-  ```
+```
+
+
 
 ---
 
 ---
 
-    ```java
+```java
     CoffeeOrder order = CoffeeOrder.builder()
                     .customer("Li Lei")
                     .items(Collections.singletonList(espresso))
@@ -751,7 +753,7 @@ Hibernate:
                     .build();
             orderRepository.save(order);
             log.info("Order: {}", order);
-  ```
+```
 
 ---
 
@@ -759,7 +761,8 @@ Hibernate:
 
 ---
 
-    ```java
+```java
+
     offeeRepository
                     .findAll(Sort.by(Sort.Direction.DESC, "id"))
                     .forEach(c -> log.info("Loading {}", c));
@@ -769,18 +772,20 @@ Hibernate:
     
             list = orderRepository.findByCustomerOrderById("Li Lei");
             log.info("findByCustomerOrderById: {}", getJoinedOrderId(list));
-    ```
+
+```
 
 ---
 
 ---
 
-    ```java
+```java
     public interface CoffeeOrderRepository extends BaseRepository<CoffeeOrder, Long> {
         List<CoffeeOrder> findByCustomerOrderById(String customer);
         List<CoffeeOrder> findByItems_Name(String name);
     }
-    ```
+  
+```
 
 ---
 
@@ -832,7 +837,7 @@ Hibernate:
 
 ---
 
-    ```java
+```java
     
     @Mapper
     public interface CoffeeMapper {
@@ -852,8 +857,8 @@ Hibernate:
         })
         Coffee findById(@Param("id") Long id);
     }
-    
-    ```
+
+```
 
 ---
 
@@ -903,6 +908,7 @@ Hibernate:
 
 - 实例代码
   
+
 ```java
 Coffee espresso = new Coffee()
                 .withName("espresso")
@@ -917,10 +923,10 @@ Coffee espresso = new Coffee()
                 .withCreateTime(new Date())
                 .withUpdateTime(new Date());
         coffeeMapper.insert(latte);
-
+    
         Coffee s = coffeeMapper.selectByPrimaryKey(1L);
         log.info("Coffee {}", s);
-
+    
         CoffeeExample example = new CoffeeExample();
         example.createCriteria().andNameEqualTo("latte");
         List<Coffee> list = coffeeMapper.selectByExample(example);
