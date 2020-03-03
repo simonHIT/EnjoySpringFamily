@@ -148,35 +148,30 @@
 - 常用注解
 
   - @EnableAspectJAutoProxy
-
-  - @Aspect
-
+- @Aspect
   - @Pointcut
-
-  - @Before
-
+- @Before
   - @After / @AfterReturning / @AfterThrowing
-
-  - @Around
-
+- @Around
   - @Order
 
 - 如何打印 SQL
-  
-  - HikariCP
 
-    - P6SQL，https://github.com/p6spy/p6spy
-  
-  - Alibaba Druid
+    - HikariCP
 
-    - 内置 SQL 输出
+      - P6SQL，https://github.com/p6spy/p6spy
 
-    - https://github.com/alibaba/druid/wiki/Druid 中使用log4j2进⾏日志输出
+    - Alibaba Druid
 
----
----
+      - 内置 SQL 输出
+
+      - https://github.com/alibaba/druid/wiki/Druid 中使用log4j2进⾏日志输出
+
 
 ---
+---
+
+## SpringBucks 进度小结
 
 - 本章小结
 

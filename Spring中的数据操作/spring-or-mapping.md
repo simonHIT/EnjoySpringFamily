@@ -183,15 +183,12 @@
   @NoArgsConstructor
   @Builder
   public class Coffee implements Serializable {
-  ```
-
 
       @Id
       @GeneratedValue
       private Long id;
     
       private String name;
-
 
       @Column
       @Type(type = "org.jadira.usertype.moneyandcurrency.joda.PersistentMoneyAmount",
@@ -305,16 +302,15 @@
 
           log.info("Coffee Order : {}", li_lei);
 
-
           li_lei = CoffeeOrder.builder().customer("Li Lei")
                   .items(Arrays.asList(espresso, latte))
                   .state(0)
                   .build();
-
+    
           coffeeOrderRepository.save(li_lei);
-
+    
           log.info("Coffee Order :{}", li_lei);
-
+    
       }
   }
   ```
@@ -498,9 +494,6 @@
   public class CoffeeOrder extends BaseEntity implements Serializable {
 
       private String customer;
-  ```
-
-
       @ManyToMany
       @JoinTable(name = "T_ORDER_COFFEE")
       @OrderBy("id")
@@ -605,9 +598,6 @@
           coffeeOrderRepository.save(order);
           log.info("Order: {}", order);
       }
-  ```
-
-
 
       private void findOrders() {
           coffeeRepository
@@ -639,7 +629,7 @@
 
 - 运行结果
 
-​```yml
+```yml
 2019-12-19 23:13:12.288  INFO 1477 --- [           main] org.hibernate.dialect.Dialect            : HHH000400: Using dialect: org.hibernate.dialect.H2Dialect
 Hibernate: 
     
@@ -693,7 +683,8 @@ Hibernate:
        foreign key (coffee_order_id) 
        references t_order
 2019-12-19 23:13:14.386  INFO 1477 --- [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
-  ```
+  
+```
 
 ---
 
@@ -738,7 +729,7 @@ Hibernate:
                     .build();
             coffeeRepository.save(espresso);
             log.info("Coffee: {}", espresso);
-```
+  ```
 
 ---
 
@@ -760,7 +751,7 @@ Hibernate:
                     .build();
             orderRepository.save(order);
             log.info("Order: {}", order);
-    ```
+  ```
 
 ---
 

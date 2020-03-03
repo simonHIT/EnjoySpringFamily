@@ -13,10 +13,11 @@
    - 引⼊ JDBC 依赖——spring-boot-starter-jdbc 
    - 获取 DataSource Bean，打印信息 
    - 也可通过 /acturator/beans 查看 Bean 
-    
    
+   
+
  ![spring boot 配置演示](images/spring-jdbc-01.png)
-   
+
  - 运行代码
    
     ```java
@@ -44,9 +45,8 @@
 	
        }
  }
-   
- ```
-   
+   ```
+
    - 启动项目我们可以看到spring boot默认为我们配置好了数据源
    - 运行结果
  ![运行结果](images/spring-jdbc-03.png)
@@ -103,7 +103,8 @@
   ```
 
 - 实例代码
-  ```java
+
+	```java
     @SpringBootApplication
     @Slf4j
     public class DatasourceDemoApplication implements CommandLineRunner {
@@ -125,23 +126,20 @@
 		    showData();
 
 	    }
-
 	    public void showConnection() throws SQLException {
 		    log.info(dataSource.toString());
 		    Connection connection=dataSource.getConnection();
 		    log.info(connection.toString());
 		    connection.close();
 	    }
-	```
-
-
 	    public void showData(){
 	
 		    jdbcTemplate.queryForList("SELECT * FROM FOO")
 				    .forEach(row->log.info(row.toString()));
 	    }
 	}
-  ```
+	```
+	
 - 运行结果
   ![运行结果](images/spring-jdbc-03.png)
   
@@ -865,9 +863,6 @@
   @RunWith(SpringRunner.class)
   @SpringBootTest
   class ErrorcodeDemoApplicationTests {
-  ```
-
-
       @Autowired
       private JdbcTemplate jdbcTemplate;
     
@@ -879,6 +874,4 @@
           jdbcTemplate.execute("INSERT INTO FOO (ID,BAR) VALUES (1,'B')");
       }
   }
-  ```
----
   ```
