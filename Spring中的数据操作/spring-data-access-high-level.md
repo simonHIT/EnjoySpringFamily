@@ -8,17 +8,17 @@
 
 ## Project Reactor 介绍
 
-- 在计算机中，响应式编程或反应式编程（英语：ReactiveProgramming）是⼀种⾯面向数据流和变化传播的编程范式。这意味着可以在编程语⾔中很⽅便地表达静态或动态的数据流，而相关的计算模型会自动将变化的值通过数据流进行传播。
+- 在计算机中，响应式编程或反应式编程（英语：ReactiveProgramming）是⼀种面向数据流和变化传播的编程范式。这意味着可以在编程语⾔中很⽅便地表达静态或动态的数据流，而相关的计算模型会自动将变化的值通过数据流进行传播。
   
-  ![Reactor](images/spring-data-access-high-level.png)
+  <img src="images/spring-data-access-high-level.png" alt="Reactor" style="zoom: 33%;" />
 
 - 回调式编程与响应式编程的对比
 
-  ![回调式编程](images/spring-data-access-high-level-01.png)
+  <img src="images/spring-data-access-high-level-01.png" alt="回调式编程" style="zoom: 50%;" />
 
-  ![响应式编程](images/spring-data-access-high-level-02.png)
+  <img src="images/spring-data-access-high-level-02.png" alt="响应式编程" style="zoom: 50%;" />
 
-  ![响应式编程](images/spring-data-access-high-level-03.png)
+  <img src="images/spring-data-access-high-level-03.png" alt="响应式编程"  />
 
 - 一些核⼼的概念
 
@@ -46,6 +46,50 @@
     - onError / onErrorReturn / onErrorResume
 
     - doOnError / doFinally
+
+------
+
+```java
+@SpringBootApplication
+@Slf4j
+
+public class SimplerReactorDemoApplication implements ApplicationRunner {
+
+    public static void main(String[] args) {
+        SpringApplication.run(SimplerReactorDemoApplication.class, args);
+    }
+
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        Flux.range(1, 6)
+                .doOnRequest(n -> log.info("Request {} number", n)) // 注意顺序造成的区别
+//				.publishOn(Schedulers.elastic())
+                .doOnComplete(() -> log.info("Publisher COMPLETE 1"))
+                .map(i -> {
+                    log.info("Publish {}, {}", Thread.currentThread(), i);
+                    return 10 / (i - 3);
+//					return i;
+                })
+                .doOnComplete(() -> log.info("Publisher COMPLETE 2"))
+//				.subscribeOn(Schedulers.single())
+//				.onErrorResume(e -> {
+//					log.error("Exception {}", e.toString());
+//					return Mono.just(-1);
+//				})
+//				.onErrorReturn(-1)
+                .subscribe(i -> log.info("Subscribe {}: {}", Thread.currentThread(), i),
+                        e -> log.error("error {}", e.toString()),
+                        () -> log.info("Subscriber COMPLETE")//,
+//						s -> s.request(4)
+                );
+        Thread.sleep(2000);
+    }
+}
+```
+
+------
+
+
 
 ## 通过 Reactive 的⽅式访问数据-Redis
 
@@ -149,12 +193,15 @@
 
   - @EnableAspectJAutoProxy
 - @Aspect
+  
   - @Pointcut
 - @Before
+  
   - @After / @AfterReturning / @AfterThrowing
 - @Around
-  - @Order
-
+  
+- @Order
+  
 - 如何打印 SQL
 
     - HikariCP
@@ -166,7 +213,6 @@
       - 内置 SQL 输出
 
       - https://github.com/alibaba/druid/wiki/Druid 中使用log4j2进⾏日志输出
-
 
 ---
 ---
