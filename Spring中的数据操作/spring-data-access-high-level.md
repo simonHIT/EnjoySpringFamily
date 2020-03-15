@@ -686,16 +686,6 @@ public class SimpleR2dbcDemoApplication extends AbstractR2dbcConfiguration imple
   }
   ```
 
-  
-
-- 运行结果
-
-  ```
-  
-  ```
-
-  
-
 ---
 
 ## 通过 AOP 打印数据访问层摘要
