@@ -45,9 +45,9 @@
 
 - ### Spring 的应⽤程序上下⽂
   
-  ![Spring 的应⽤程序上下⽂](images/spring-mvc-explore-01.png)
+  <img src="images/spring-mvc-explore-01.png" alt="Spring 的应⽤程序上下⽂"  />
 
-  ![Spring 的应⽤程序上下⽂](images/spring-mvc-explore-02.png)
+  <img src="images/spring-mvc-explore-02.png" alt="Spring 的应⽤程序上下⽂" style="zoom: 67%;" />
 
 - ### 关于上下文常用的接⼝
 
@@ -80,7 +80,7 @@
 
 - ### Spring MVC 的请求处理流程
 
-  ![请求处理流程](images/spring-mvc-explore-06.png)
+  <img src="images/spring-mvc-explore-06.png" alt="请求处理流程" style="zoom:67%;" />
 
 - ### 一个请求的大致处理流程
   
