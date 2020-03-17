@@ -39,16 +39,268 @@
   - @RequestBody / @ResponseBody / @ResponseStatus
 
 ---
+代码示例
+
+- model层
+
+  Coffee
+
+  ```java
+  @Data
+  @Builder
+  @Entity
+  @Table(name = "T_COFFEE")
+  @AllArgsConstructor
+  @NoArgsConstructor
+  @ToString(callSuper = true)
+  @EqualsAndHashCode(callSuper = true)
+  public class Coffee extends BaseEntity implements Serializable {
+  
+      private String name;
+  
+      @Type(type = "org.jadira.usertype.moneyandcurrency.joda.PersistentMoneyMinorAmount",
+      parameters = {@org.hibernate.annotations.Parameter(name = "currencyCode",value = "CNY")})
+      private Money price;
+  
+  }
+  ```
+
+  CoffeeOrder
+
+  ```java
+  @Builder
+  @AllArgsConstructor
+  @NoArgsConstructor
+  @ToString(callSuper = true)
+  @EqualsAndHashCode(callSuper = true)
+  @Data
+  @Table(name = "T_ORDER")
+  @Entity
+  public class CoffeeOrder extends BaseEntity implements Serializable {
+  
+      private String customer;
+  
+      @ManyToMany
+      @JoinTable(name = "T_ORDER_COFFEE")
+      @OrderBy("id")
+      private List<Coffee> items;
+  
+      @Enumerated
+      @Column(nullable = false)
+      private OrderState state;
+  }
+  ```
+
+  BaseEntity
+
+  ```java
+  @MappedSuperclass
+  @Data
+  @NoArgsConstructor
+  @AllArgsConstructor
+  public class BaseEntity implements Serializable {
+  
+      @Id
+      @GeneratedValue(strategy = GenerationType.IDENTITY)
+      private Long id;
+  
+      @CreationTimestamp
+      @Column(updatable = false)
+      private Date createTime;
+  
+      @UpdateTimestamp
+      private Date updateTime;
+  
+  }
+  ```
+
+  OrderState
+
+  ```java
+  public enum OrderState {
+      INIT, PAID, BREWING, BREWED, TAKEN, CANCELLED
+  }
+  ```
+
+  
+
+- repository层
+
+  CoffeeRepository
+
+  ```java
+  public interface CoffeeRepository extends JpaRepository<Coffee, Long> {
+      public List<Coffee> findByNameInOrderById(List<String> list);
+  }
+  ```
+
+  CoffeeOrderRepository
+
+  ```java
+  public interface CoffeeOrderRepository extends JpaRepository<CoffeeOrder,Long> {
+  }
+  ```
+
+  
+
+- service层
+
+  CoffeeService
+
+  ```java
+  @Slf4j
+  @Service
+  @CacheConfig(cacheNames = "CoffeeCache")
+  public class CoffeeService {
+  
+      @Autowired
+      private CoffeeRepository coffeeRepository;
+  
+      @Cacheable
+      public List<Coffee> findAllCoffee() {
+  
+          return coffeeRepository.findAll(Sort.by("id"));
+      }
+  
+      public List<Coffee> getCoffeeByName(List<String> names) {
+  
+          return coffeeRepository.findByNameInOrderById(names);
+      }
+  }
+  ```
+
+  CoffeeOrderService
+
+  ```java
+  @Service
+  @Slf4j
+  @Transactional
+  public class CoffeeOrderService {
+  
+      @Autowired
+      private CoffeeOrderRepository orderRepository;
+  
+      public CoffeeOrder createOrder(String customer, Coffee... coffees) {
+  
+          CoffeeOrder order = CoffeeOrder.builder()
+                  .customer(customer)
+                  .items(Arrays.asList(coffees))
+                  .state(OrderState.INIT)
+                  .build();
+  
+          CoffeeOrder saved = orderRepository.save(order);
+  
+          log.info("New order:{}",saved);
+          return saved;
+      }
+  
+      public boolean updateState(CoffeeOrder order,OrderState state){
+  
+          if (state.compareTo(order.getState())<=0){
+              log.warn("Wrong State order: {}, {}", state, order.getState());
+              return false;
+          }
+          order.setState(state);
+          orderRepository.save(order);
+          log.info("Updated Order: {}", order);
+          return true;
+      }
+  }
+  ```
+
+  
+
+- controller层
+
+  CoffeeController
+
+  ```java
+  @Controller
+  @RequestMapping("/coffee")
+  public class CoffeeController {
+      @Autowired
+      private CoffeeService coffeeService;
+  
+      @GetMapping("/")
+      @ResponseBody
+      public List<Coffee> getAll() {
+          return coffeeService.findAllCoffee();
+      }
+  }
+  ```
+
+  CoffeeOrderController
+
+  ```java
+  @RestController
+  @RequestMapping("/order")
+  @Slf4j
+  public class CoffeeOrderController {
+      @Autowired
+      private CoffeeOrderService orderService;
+      @Autowired
+      private CoffeeService coffeeService;
+  
+      @PostMapping("/")
+      @ResponseStatus(HttpStatus.CREATED)
+      public CoffeeOrder create(@RequestBody NewOrderRequest newOrder) {
+          log.info("Receive new Order {}", newOrder);
+          Coffee[] coffeeList = coffeeService.getCoffeeByName(newOrder.getItems())
+                  .toArray(new Coffee[] {});
+          return orderService.createOrder(newOrder.getCustomer(), coffeeList);
+      }
+  }
+  ```
+
+  
+
+- 主启动类
+
+  Application
+
+  
+
+  ```java
+  @EnableCaching
+  @EnableJpaRepositories
+  @SpringBootApplication
+  public class SimpleControllerDemoApplication {
+  
+      public static void main(String[] args) {
+          SpringApplication.run(SimpleControllerDemoApplication.class, args);
+      }
+  
+  }
+  ```
+
+运行结果
+
+- “http://localhost:8080/coffee/” 接口访问
+
+  
+
+  ```json
+  [{"id":1,"createTime":"2020-03-17T07:40:15.695+0000","updateTime":"2020-03-17T07:40:15.695+0000","name":"espresso","price":{"zero":false,"negative":false,"positive":true,"scale":2,"amount":20.00,"amountMajorLong":20,"amountMinor":2000,"amountMinorInt":2000,"amountMinorLong":2000,"minorPart":0,"currencyUnit":{"code":"CNY","numericCode":156,"decimalPlaces":2,"symbol":"￥","pseudoCurrency":false,"numeric3Code":"156","countryCodes":["CN"]},"amountMajor":20,"amountMajorInt":20,"positiveOrZero":true,"negativeOrZero":false}},{"id":2,"createTime":"2020-03-17T07:40:15.701+0000","updateTime":"2020-03-17T07:40:15.701+0000","name":"latte","price":{"zero":false,"negative":false,"positive":true,"scale":2,"amount":25.00,"amountMajorLong":25,"amountMinor":2500,"amountMinorInt":2500,"amountMinorLong":2500,"minorPart":0,"currencyUnit":{"code":"CNY","numericCode":156,"decimalPlaces":2,"symbol":"￥","pseudoCurrency":false,"numeric3Code":"156","countryCodes":["CN"]},"amountMajor":25,"amountMajorInt":25,"positiveOrZero":true,"negativeOrZero":false}},{"id":3,"createTime":"2020-03-17T07:40:15.701+0000","updateTime":"2020-03-17T07:40:15.701+0000","name":"capuccino","price":{"zero":false,"negative":false,"positive":true,"scale":2,"amount":25.00,"amountMajorLong":25,"amountMinor":2500,"amountMinorInt":2500,"amountMinorLong":2500,"minorPart":0,"currencyUnit":{"code":"CNY","numericCode":156,"decimalPlaces":2,"symbol":"￥","pseudoCurrency":false,"numeric3Code":"156","countryCodes":["CN"]},"amountMajor":25,"amountMajorInt":25,"positiveOrZero":true,"negativeOrZero":false}},{"id":4,"createTime":"2020-03-17T07:40:15.701+0000","updateTime":"2020-03-17T07:40:15.701+0000","name":"mocha","price":{"zero":false,"negative":false,"positive":true,"scale":2,"amount":30.00,"amountMajorLong":30,"amountMinor":3000,"amountMinorInt":3000,"amountMinorLong":3000,"minorPart":0,"currencyUnit":{"code":"CNY","numericCode":156,"decimalPlaces":2,"symbol":"￥","pseudoCurrency":false,"numeric3Code":"156","countryCodes":["CN"]},"amountMajor":30,"amountMajorInt":30,"positiveOrZero":true,"negativeOrZero":false}},{"id":5,"createTime":"2020-03-17T07:40:15.702+0000","updateTime":"2020-03-17T07:40:15.702+0000","name":"macchiato","price":{"zero":false,"negative":false,"positive":true,"scale":2,"amount":30.00,"amountMajorLong":30,"amountMinor":3000,"amountMinorInt":3000,"amountMinorLong":3000,"minorPart":0,"currencyUnit":{"code":"CNY","numericCode":156,"decimalPlaces":2,"symbol":"￥","pseudoCurrency":false,"numeric3Code":"156","countryCodes":["CN"]},"amountMajor":30,"amountMajorInt":30,"positiveOrZero":true,"negativeOrZero":false}}]
+  ```
+
+  
+
 ---
 
 ## 理解 Spring 的应⽤上下⽂
 
 - ### Spring 的应⽤程序上下⽂
   
+  
+
   <img src="images/spring-mvc-explore-01.png" alt="Spring 的应⽤程序上下⽂"  />
 
+  
+  
   <img src="images/spring-mvc-explore-02.png" alt="Spring 的应⽤程序上下⽂" style="zoom: 67%;" />
-
+  
+  
+  
 - ### 关于上下文常用的接⼝
 
   - BeanFactory
