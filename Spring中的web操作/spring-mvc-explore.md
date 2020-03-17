@@ -45,6 +45,8 @@
 
   Coffee
 
+  
+
   ```java
   @Data
   @Builder
@@ -66,6 +68,8 @@
   ```
 
   CoffeeOrder
+
+  
 
   ```java
   @Builder
@@ -93,6 +97,8 @@
 
   BaseEntity
 
+  
+
   ```java
   @MappedSuperclass
   @Data
@@ -116,6 +122,8 @@
 
   OrderState
 
+  
+
   ```java
   public enum OrderState {
       INIT, PAID, BREWING, BREWED, TAKEN, CANCELLED
@@ -128,6 +136,8 @@
 
   CoffeeRepository
 
+  
+
   ```java
   public interface CoffeeRepository extends JpaRepository<Coffee, Long> {
       public List<Coffee> findByNameInOrderById(List<String> list);
@@ -135,6 +145,8 @@
   ```
 
   CoffeeOrderRepository
+
+  
 
   ```java
   public interface CoffeeOrderRepository extends JpaRepository<CoffeeOrder,Long> {
@@ -146,6 +158,8 @@
 - service层
 
   CoffeeService
+
+  
 
   ```java
   @Slf4j
@@ -170,6 +184,8 @@
   ```
 
   CoffeeOrderService
+
+  
 
   ```java
   @Service
@@ -214,6 +230,8 @@
 
   CoffeeController
 
+  
+
   ```java
   @Controller
   @RequestMapping("/coffee")
@@ -230,6 +248,8 @@
   ```
 
   CoffeeOrderController
+
+  
 
   ```java
   @RestController
