@@ -12,7 +12,7 @@
 
 - 在计算机中，响应式编程或反应式编程（英语：ReactiveProgramming）是⼀种面向数据流和变化传播的编程范式。这意味着可以在编程语⾔中很⽅便地表达静态或动态的数据流，而相关的计算模型会自动将变化的值通过数据流进行传播。
   
-  <img src="images/spring-data-access-high-level.png" alt="Reactor" style="zoom: 33%;" />
+  <img src="images/spring-data-access-high-level.png" alt="Reactor" style="zoom: 25%;" />
 
 - 回调式编程与响应式编程的对比
 
@@ -72,6 +72,8 @@
 
    - 代码
 
+     
+
    ```java
    @Slf4j
    @SpringBootApplication
@@ -111,6 +113,8 @@
 
    - 结果
 
+     
+
    ```yaml
    2020-03-15 17:04:11.353  INFO 32191 --- [           main] c.s.s.SimpleReactorDemoApplication       : Started SimpleReactorDemoApplication in 15.976 seconds (JVM running for 21.925)
    2020-03-15 17:04:11.377  INFO 32191 --- [           main] c.s.s.SimpleReactorDemoApplication       : Request 9223372036854775807 number
@@ -137,6 +141,8 @@
 2. 更改publishOn线程池和subscribeOn线程池
 
    - 代码
+
+     
 
    ```java
    @Slf4j
@@ -178,6 +184,8 @@
 
    - 结果
 
+     
+
    ```yaml
    2020-03-15 17:14:54.601  INFO 32299 --- [           main] c.s.s.SimpleReactorDemoApplication       : Started SimpleReactorDemoApplication in 17.449 seconds (JVM running for 23.909)
    2020-03-15 17:14:54.859  INFO 32299 --- [       single-1] c.s.s.SimpleReactorDemoApplication       : Request 256 number
@@ -203,6 +211,8 @@
 3. 添加异常错误处理
 
    - 代码
+
+     
 
    ```java
    @Override
@@ -235,6 +245,8 @@
 
    - 结果
 
+     
+
    ```yaml
    2020-03-15 17:25:06.245  INFO 32377 --- [           main] c.s.s.SimpleReactorDemoApplication       : Started SimpleReactorDemoApplication in 16.632 seconds (JVM running for 22.928)
    2020-03-15 17:25:06.343  INFO 32377 --- [       single-1] c.s.s.SimpleReactorDemoApplication       : Request 256 number
@@ -256,6 +268,8 @@
 
    - 代码
 
+     
+   
    ```java
    @Override
        public void run(ApplicationArguments args) throws Exception {
@@ -281,11 +295,13 @@
                            s -> s.request(4)
                    );
            Thread.sleep(2000);
-       }
+    }
    ```
 
    - 结果
-
+   
+     
+   
    ```yaml
    2020-03-15 17:29:12.265  INFO 32410 --- [           main] c.s.s.SimpleReactorDemoApplication       : Started SimpleReactorDemoApplication in 16.278 seconds (JVM running for 22.414)
    2020-03-15 17:29:12.315  INFO 32410 --- [       single-1] c.s.s.SimpleReactorDemoApplication       : Request 4 number
@@ -321,6 +337,8 @@
 
 ---
 - 代码示例
+
+  
 
 ```java
 @Slf4j
@@ -385,6 +403,8 @@ public class RedisReactorDemoApplication implements ApplicationRunner {
 
 - 结果
 
+  
+
 ```yaml
 2020-03-15 18:12:17.554  INFO 32788 --- [           main] c.s.r.RedisReactorDemoApplication        : No active profile set, falling back to default profiles: default
 2020-03-15 18:12:18.776  INFO 32788 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Multiple Spring Data modules found, entering strict repository configuration mode!
@@ -436,6 +456,8 @@ public class RedisReactorDemoApplication implements ApplicationRunner {
 
 ---
 - 代码
+
+  
 
 ```java
 @Slf4j
@@ -636,6 +658,8 @@ public class SimpleR2dbcDemoApplication extends AbstractR2dbcConfiguration imple
 ---
 - 代码
 
+  
+  
   ```java
   @Slf4j
   @SpringBootApplication
@@ -733,6 +757,8 @@ public class SimpleR2dbcDemoApplication extends AbstractR2dbcConfiguration imple
 
   - Application.java
 
+    
+
   ```java
   @Slf4j
   @EnableTransactionManagement
@@ -768,6 +794,8 @@ public class SimpleR2dbcDemoApplication extends AbstractR2dbcConfiguration imple
   ```
 
   - PerformanceAspect.java
+
+    
 
   ```java
   @Aspect
@@ -806,6 +834,8 @@ public class SimpleR2dbcDemoApplication extends AbstractR2dbcConfiguration imple
 
 - 运行效果
 
+  
+  
   ```
   2020-03-15 20:59:44.464  INFO 34296 --- [           main] c.s.p.PerformenceAspectDemoApplication   : No active profile set, falling back to default profiles: default
   2020-03-15 20:59:46.016  INFO 34296 --- [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
@@ -855,9 +885,9 @@ public class SimpleR2dbcDemoApplication extends AbstractR2dbcConfiguration imple
   2020-03-15 20:59:53.113  INFO 34296 --- [           main] c.s.p.PerformenceAspectDemoApplication   : Update PAID to INIT: false
   2020-03-15 20:59:53.120  INFO 34296 --- [extShutdownHook] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
   2020-03-15 20:59:53.123  INFO 34296 --- [extShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
-  2020-03-15 20:59:53.127  INFO 34296 --- [extShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2020-03-15 20:59:53.127  INFO 34296 --- [extShutdownHook] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
   ```
-
+  
   
 
 ---
