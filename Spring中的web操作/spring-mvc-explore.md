@@ -346,6 +346,126 @@
   ![Web 上下文层次](images/spring-mvc-explore-04.png)
 
 ---
+- 通过演示上下文获取Bean来实现代理的功能
+
+- 代码
+
+  - TestBean实体类
+
+    ```java
+    @Slf4j
+    @AllArgsConstructor
+    public class TestBean {
+    
+        private String context;
+    
+        public void hello(){
+            log.info("hello: "+context);
+        }
+    }
+    ```
+
+  - FooConfig配置类
+
+    ```java
+    @Configuration
+    @EnableAspectJAutoProxy
+    public class FooConfig {
+    
+        @Bean
+        public TestBean testBeanX(){
+            return new TestBean("FOO");
+        }
+    
+        @Bean
+        public TestBean testBeanY(){
+            return new TestBean("FOO");
+        }
+    
+        @Bean
+        public FooAspect fooAspect(){
+            return new FooAspect();
+        }
+    }
+    ```
+
+  - FooAspect代理类
+
+    ```java
+    @Aspect
+    @Slf4j
+    public class FooAspect {
+    
+        @AfterReturning("bean(testBean*)")
+        public void printAfter(){
+            log.info("after hello...");
+        }
+    }
+    ```
+
+  - Application主启动类
+
+    ```java
+    @Slf4j
+    @SpringBootApplication
+    public class ComplexHierarchyDemoApplication implements ApplicationRunner {
+    
+        public static void main(String[] args) {
+            SpringApplication.run(ComplexHierarchyDemoApplication.class, args);
+        }
+    
+        @Override
+        public void run(ApplicationArguments args) throws Exception {
+    
+            ApplicationContext fooContex = new AnnotationConfigApplicationContext(FooConfig.class);
+            ApplicationContext barContext = new ClassPathXmlApplicationContext(
+                    new String[]{"applicationContext.xml"}, fooContex);
+    
+            TestBean testBeanX = fooContex.getBean("testBeanX", TestBean.class);
+            testBeanX.hello();
+    
+            log.info("====================");
+    
+            TestBean bar1 = barContext.getBean("testBeanX", TestBean.class);
+            bar1.hello();
+    
+            TestBean bar2 = barContext.getBean("testBeanY", TestBean.class);
+            bar2.hello();
+        }
+    }
+    ```
+
+  - applicationContext配置文件
+
+    ```xml
+    <beans xmlns="http://www.springframework.org/schema/beans"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:aop="http://www.springframework.org/schema/aop"
+           xsi:schemaLocation="http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/aop
+            http://www.springframework.org/schema/aop/spring-aop.xsd">
+        <aop:aspectj-autoproxy/>
+        <bean id="testBeanX" class="com.simon.complexhierarchydemo.context.TestBean">
+            <constructor-arg name="context" value="Bar" />
+        </bean>
+        <!--<bean id="fooAspect" class="geektime.spring.web.foo.FooAspect" />-->
+    </beans>
+    ```
+
+- 运行结果
+
+  ```yaml
+  2020-04-03 16:19:31.410  INFO 19012 --- [           main] c.s.c.c.ComplexHierarchyDemoApplication  : Started ComplexHierarchyDemoApplication in 1.225 seconds (JVM running for 2.158)
+  2020-04-03 16:19:31.801  INFO 19012 --- [           main] c.s.c.context.TestBean                   : hello: FOO
+  2020-04-03 16:19:31.802  INFO 19012 --- [           main] c.s.complexhierarchydemo.foo.FooAspect   : after hello...
+  2020-04-03 16:19:31.802  INFO 19012 --- [           main] c.s.c.c.ComplexHierarchyDemoApplication  : ====================
+  2020-04-03 16:19:31.803  INFO 19012 --- [           main] c.s.c.context.TestBean                   : hello: Bar
+  2020-04-03 16:19:31.803  INFO 19012 --- [           main] c.s.complexhierarchydemo.foo.FooAspect   : after hello...
+  2020-04-03 16:19:31.803  INFO 19012 --- [           main] c.s.c.context.TestBean                   : hello: FOO
+  2020-04-03 16:19:31.803  INFO 19012 --- [           main] c.s.complexhierarchydemo.foo.FooAspect   : after hello...
+  ```
+
 ---
 
 ## Spring MVC 中的各种机制-请求处理
@@ -398,7 +518,7 @@
 
     - 详细返回
 
-    - <https://docs.spring.io/spring/docs/5.1.5.RELEASE/spring-framework-reference/web.html#mvc-ann-return-types>
+      - <https://docs.spring.io/spring/docs/5.1.5.RELEASE/spring-framework-reference/web.html#mvc-ann-return-types>
 
 ---
 
