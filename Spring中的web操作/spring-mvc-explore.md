@@ -534,10 +534,12 @@
 
       - Spring Boot 在 WebMvcAutoConfiguration 中实现了一个
 
+          WebMvcAutoConfigurationSupport
+
       - 添加⾃自定义的 Converter
-
+  
       - 添加⾃自定义的 Formatter
-
+    
   - 定义校验
     - 通过 Validator 对绑定结果进行校验
       - Hibernate Validator
@@ -556,6 +558,110 @@
     - MultipartFile 类型
 
 ---
+-   MoneyFormatter
+
+```java
+@Component
+public class MoneyFormatter implements Formatter<Money> {
+    @Override
+    public Money parse(String s, Locale locale) throws ParseException {
+        if (NumberUtils.isParsable(s)) {
+            return Money.of(CurrencyUnit.of("CNY"), NumberUtils.createBigDecimal(s));
+        } else if (StringUtils.isNotEmpty(s)) {
+            String[] split = StringUtils.split(s, " ");
+            if (split != null && split.length == 2 && NumberUtils.isParsable(split[1])) {
+                return Money.of(CurrencyUnit.of(split[0]), NumberUtils.createBigDecimal(split[1]));
+            } else {
+                throw new ParseException(s, 0);
+            }
+        }
+        throw new ParseException(s, 0);
+    }
+
+    @Override
+    public String print(Money money, Locale locale) {
+        if (money == null) {
+            return null;
+        }
+        return money.getCurrencyUnit().getCode() + " " + money.getAmount();
+    }
+}
+```
+
+CoffeeController
+
+```java
+@Controller
+@RequestMapping("/coffee")
+@Slf4j
+public class CoffeeController {
+    @Autowired
+    private CoffeeService coffeeService;
+
+    @PostMapping(path = "/", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @ResponseBody
+    @ResponseStatus
+    public Coffee addCoffee(@Valid NewCoffeeRequest coffeeRequest, BindingResult result) {
+        if (result.hasErrors()) {
+            log.warn("Binding errors:{}", result);
+            return null;
+        }
+        return coffeeService.saveCoffee(coffeeRequest.getName(), coffeeRequest.getPrice());
+    }
+
+    @PostMapping(path = "/add", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @ResponseBody
+    @ResponseStatus(HttpStatus.CREATED)
+    public Coffee addCoffeeWithoutBindingResult(@Valid NewCoffeeRequest newCoffee) {
+        return coffeeService.saveCoffee(newCoffee.getName(), newCoffee.getPrice());
+    }
+
+    @PostMapping(path = "/", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseBody
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<Coffee> batchAddCoffee(@RequestParam(name = "file") MultipartFile file) {
+        List<Coffee> coffees = new ArrayList<>();
+        if (!file.isEmpty()) {
+            BufferedReader reader = null;
+            try {
+                reader = new BufferedReader(new InputStreamReader(file.getInputStream()));
+                String str;
+                while ((str = reader.readLine()) != null) {
+                    String[] arr = StringUtils.split(str, " ");
+                    if (arr != null && arr.length == 2) {
+                        coffees.add(coffeeService.saveCoffee(arr[0],
+                            Money.of(CurrencyUnit.of("CNY"), NumberUtils.createBigDecimal(arr[1]))));
+                    }
+                }
+            } catch (IOException exception) {
+                log.error("upload catch exception:", exception);
+            } finally {
+                IOUtils.closeQuietly(reader);
+            }
+        }
+        return coffees;
+    }
+
+    @GetMapping(path = "/", params = "!name")
+    @ResponseBody
+    public List<Coffee> getAll() {
+        return this.coffeeService.getAllCoffee();
+    }
+
+    @RequestMapping(path = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    public Coffee getById(@PathVariable Long id) {
+        return this.coffeeService.getCoffee(id);
+    }
+
+    @GetMapping(path = "/", params = "name")
+    public Coffee getByName(@RequestParam String name) {
+        return this.coffeeService.getCoffeeByName(name);
+    }
+}
+```
+
+
+
 ---
 
 ## Spring MVC 中的各种机制-视图处理
@@ -566,15 +672,23 @@
 
     - AbstractCachingViewResolver
 
+        抽象的基类，实现缓存的视图
+
     - UrlBasedViewResolver
 
     - FreeMarkerViewResolver
 
+        使用了FreeMarker
+  
     - ContentNegotiatingViewResolver
-
+    
+        可配置使用json，也可配置使用xml
+    
     - InternalResourceViewResolver
-
-- DispatcherServlet 中的视图解析逻辑
+    
+        用于处理jsp和jstl
+  
+- ### DispatcherServlet 中的视图解析逻辑
 
 
   - initStrategies()
@@ -599,13 +713,25 @@
 
         - RequestResponseBodyMethodProcessor.handleReturnValue()
 
-- 重定向
+- ### 重定向
 
   - 两种不同的重定向前缀
 
     - redirect:
 
+        客户端
+    
+        302跳转
+    
+        会丢失request中的信息（尽管通过某种方法来做这个事情）
+    
+        浏览器中URL会发生变化
+    
     - forward:
+    
+        服务端跳转
+    
+        request不变
 
 ## Spring MVC 中的常用视图
 
@@ -639,6 +765,55 @@
     - 增加 jackson-dataformat-xml 以支持 XML 序列化
 
 ---
+
+#### Spring Boot 通过 @JsonComponent 注册 JSON 序列列化组件
+
+MoneySerializer
+
+```java
+@JsonComponent
+public class MoneySerializer extends StdSerializer<Money> {
+    protected MoneySerializer() {
+        super(Money.class);
+    }
+
+    @Override
+    public void serialize(Money money, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+        throws IOException {
+        jsonGenerator.writeNumber(money.getAmount());
+    }
+}
+```
+
+MoneyDeserializer
+
+```java
+@JsonComponent
+public class MoneyDeserializer extends StdDeserializer<Money> {
+    protected MoneyDeserializer() {
+        super(Money.class);
+    }
+
+    @Override
+    public Money deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
+        throws IOException, JsonProcessingException {
+        return Money.of(CurrencyUnit.of("CNY"), jsonParser.getDecimalValue());
+    }
+}
+```
+
+CoffeeController
+
+```java
+@PostMapping(path = "/addJson", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
+    @ResponseBody
+    @ResponseStatus(HttpStatus.CREATED)
+    public Coffee addJsonCoffeeWithoutBindingResult(@Valid @RequestBody NewCoffeeRequest request) {
+        return this.coffeeService.saveCoffee(request.getName(), request.getPrice());
+    }
+```
+
+
 
 ---
 
