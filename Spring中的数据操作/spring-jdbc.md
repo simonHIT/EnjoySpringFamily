@@ -23,7 +23,7 @@
     ```java
     @SpringBootApplication
     @Slf4j
- public class DatasourceDemoApplication implements CommandLineRunner {
+ 	public class DatasourceDemoApplication implements CommandLineRunner {
 	
 	    @Autowired
     private DataSource dataSource;
@@ -44,7 +44,7 @@
 	    connection.close();
 	
        }
- }
+ 	}
    ```
 
    - 启动项目我们可以看到spring boot默认为我们配置好了数据源
