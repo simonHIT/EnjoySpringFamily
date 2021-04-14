@@ -537,7 +537,7 @@
           WebMvcAutoConfigurationSupport
 
       - 添加⾃自定义的 Converter
-  
+    
       - 添加⾃自定义的 Formatter
     
   - 定义校验
@@ -852,6 +852,75 @@ CoffeeController
     ```
 
 ---
+CoffeeController
+
+```java
+@ModelAttribute
+    public List<Coffee> coffeeList() {
+        return coffeeService.getAllCoffee();
+    }
+
+    @GetMapping(path = "/")
+    public ModelAndView showCreateForm() {
+        return new ModelAndView("create-order-form");
+    }
+
+    @PostMapping(path = "/", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public String createOrder(@Valid NewOrderRequest newOrder,
+                                    BindingResult result, ModelMap map) {
+        if (result.hasErrors()) {
+            log.warn("Binding Result: {}", result);
+            map.addAttribute("message", result.toString());
+            return "create-order-form";
+        }
+
+        log.info("Receive new Order {}", newOrder);
+        Coffee[] coffeeList = coffeeService.getCoffeeByName(newOrder.getItems())
+                .toArray(new Coffee[] {});
+        CoffeeOrder order = orderService.createOrder(newOrder.getCustomer(), coffeeList);
+        return "redirect:/order/" + order.getId();
+    }
+```
+
+create-order-form.html
+
+```html
+<html xmlns:th="http://www.thymeleaf.org">
+    <body>
+        <h2>Coffee Available Today</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Coffee Name</th>
+                    <th>Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="coffee : ${coffeeList}">
+                    <td th:text="${coffee.name}">Espresso</td>
+                    <td th:text="${coffee.price}">CNY 12.0</td>
+                </tr>
+            </tbody>
+        </table>
+        <h2>Your Order</h2>
+        <form action="#" th:action="@{/order/}" method="post">
+            <label>Customer Name</label>
+            <input type="text" name="customer" />
+            <ul>
+                <li th:each="coffee : ${coffeeList}">
+                    <input type="checkbox" name="items" th:value="${coffee.name}" />
+                    <label th:text="${coffee.name}">Espresso</label>
+                </li>
+            </ul>
+            <input type="submit" value="Submit"/>
+            <p th:text="${message}">Message</p>
+        </form>
+    </body>
+</html>
+```
+
+
+
 ---
 
 ## 静态资源与缓存
@@ -883,8 +952,38 @@ CoffeeController
   ![Controller 中⼿工设置缓存](images/spring-mvc-explore-11.png)
 
   ---
-  ---
+  CoffeeController中某个方法开启cacheControll
 
+  ```java
+      @GetMapping(path = "/", params = "!name")
+      @ResponseBody
+      public List<Coffee> getAll() {
+          return coffeeService.getAllCoffee();
+      }
+  
+      @RequestMapping(path = "/{id}", method = RequestMethod.GET,
+              produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+      @ResponseBody
+      public ResponseEntity<Coffee> getById(@PathVariable Long id) {
+          Coffee coffee = coffeeService.getCoffee(id);
+          return ResponseEntity.ok()
+                  .cacheControl(CacheControl.maxAge(10, TimeUnit.SECONDS))
+                  .body(coffee);
+      }
+  ```
+  
+  也可在application.properties中配置静态资源路径及缓存设置
+  
+  ```properties
+  spring.mvc.static-path-pattern=/static/**
+  spring.resources.cache.cachecontrol.max-age=20s
+  spring.resources.cache.cachecontrol.no-cache=true
+  ```
+  
+  
+  
+  ---
+  
 - 建议的资源访问方式
   
   ![建议的资源访问方式](images/spring-mvc-explore-12.png)
@@ -917,6 +1016,23 @@ CoffeeController
       - @ControllerAdvice / @RestControllerAdvice
 
 ---
+GlobalControllerAdvice中实现拦截器方法，拦截抛出的特定异常，并做相应的处理
+
+```java
+@RestControllerAdvice
+public class GlobalControllerAdvice {
+    @ExceptionHandler(ValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> validationExceptionHandler(ValidationException exception) {
+        Map<String, String> map = new HashMap<>();
+        map.put("message", exception.getMessage());
+        return map;
+    }
+}
+```
+
+
+
 ---
 
 ## 了解 Spring MVC 的切入点
@@ -956,7 +1072,48 @@ CoffeeController
       - 不能带 @EnableWebMvc（想彻底自己控制 MVC 配置除外）
 
 ---
----
+
+SpringMVC 拦截器的实现
+
+```java
+@Slf4j
+public class PerformanceInteceptor implements HandlerInterceptor {
+    private ThreadLocal<StopWatch> stopWatch = new ThreadLocal<>();
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        StopWatch sw = new StopWatch();
+        stopWatch.set(sw);
+        sw.start();
+        return true;
+    }
+
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        stopWatch.get().stop();
+        stopWatch.get().start();
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        StopWatch sw = stopWatch.get();
+        sw.stop();
+        String method = handler.getClass().getSimpleName();
+        if (handler instanceof HandlerMethod) {
+            String beanType = ((HandlerMethod) handler).getBeanType().getName();
+            String methodName = ((HandlerMethod) handler).getMethod().getName();
+            method = beanType + "." + methodName;
+        }
+        log.info("{};{};{};{};{}ms;{}ms;{}ms", request.getRequestURI(), method,
+                response.getStatus(), ex == null ? "-" : ex.getClass().getSimpleName(),
+                sw.getTotalTimeMillis(), sw.getTotalTimeMillis() - sw.getLastTaskTimeMillis(),
+                sw.getLastTaskTimeMillis());
+        stopWatch.remove();
+    }
+}
+```
+
+
 
 ---
 

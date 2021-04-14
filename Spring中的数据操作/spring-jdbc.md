@@ -49,7 +49,7 @@
 
    - 启动项目我们可以看到spring boot默认为我们配置好了数据源
    - 运行结果
- ![运行结果](images/spring-jdbc-03.png)
+- ![运行结果](images/spring-jdbc-03.png)
    
 2. 直接配置所需的Bean 
 
@@ -62,7 +62,6 @@
      - JdbcTemplate 
 
 - 我们通过一个没有springboot的项目来演示jdbc操作
-- 
 
 3. Spring Boot 帮我们做了哪些配置 
    - DataSourceAutoConﬁguration 
