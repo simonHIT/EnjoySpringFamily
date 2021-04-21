@@ -58,18 +58,26 @@ RestTemplate 的高阶用法
     -   RestTemplate.exchange()
     -   ParameterizedTypeReference<T>
         
-    ---
-    使用RequestEntity及ResponseEntity设置请求头以及响应头
-        URI nameUri = UriComponentsBuilder.fromUriString("http://localhost:8080/coffee/?name={name}").build("mocha");
-                RequestEntity<Void> req = RequestEntity.get(nameUri).accept(MediaType.APPLICATION_XML).build();
-                ResponseEntity<String> resp = restTemplate.exchange(req, String.class);
-                log.info("Response Status:{},Respense Headers:{}", resp.getStatusCode(), resp.getHeaders());
-                log.info("Coffee:{}", resp.getBody());
-    使用ParameterizedTypeReference来解析泛型对象，直接使用泛型对象来接收会报类型转换错误，LinkedHashMap can not be casted to target Type
-        ParameterizedTypeReference<List<Coffee>> listRespP = new ParameterizedTypeReference<List<Coffee>>() {};
-                ResponseEntity<List<Coffee>> listResp = restTemplate.exchange(coffeeUri, HttpMethod.GET, null, listRespP);
-                listResp.getBody().forEach(coffee -> log.info("Coffee {}", coffee));
-    ---
+
+---
+
+使用RequestEntity及ResponseEntity设置请求头以及响应头
+
+    URI nameUri = UriComponentsBuilder.fromUriString("http://localhost:8080/coffee/?name={name}").build("mocha");
+            RequestEntity<Void> req = RequestEntity.get(nameUri).accept(MediaType.APPLICATION_XML).build();
+            ResponseEntity<String> resp = restTemplate.exchange(req, String.class);
+            log.info("Response Status:{},Respense Headers:{}", resp.getStatusCode(), resp.getHeaders());
+            log.info("Coffee:{}", resp.getBody());
+
+使用ParameterizedTypeReference来解析泛型对象，直接使用泛型对象来接收会报类型转换错误，LinkedHashMap can not be casted to target Type
+
+    ParameterizedTypeReference<List<Coffee>> listRespP = new ParameterizedTypeReference<List<Coffee>>() {};
+            ResponseEntity<List<Coffee>> listResp = restTemplate.exchange(coffeeUri, HttpMethod.GET, null, listRespP);
+            listResp.getBody().forEach(coffee -> log.info("Coffee {}", coffee));
+
+---
+
+
 
 简单定制 RestTemplate
 
