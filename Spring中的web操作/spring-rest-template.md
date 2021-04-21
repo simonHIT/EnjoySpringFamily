@@ -180,7 +180,64 @@ WebClient 的基本用法
 
 ---
 
+WeClient的用法示例
 
+    @SpringBootApplication
+    @Slf4j
+    public class WebClientApplication implements ApplicationRunner {
+    
+        @Autowired
+        private WebClient webClient;
+    
+        public static void main(String[] args) {
+            new SpringApplicationBuilder(WebClientApplication.class).web(WebApplicationType.NONE)
+                .bannerMode(Banner.Mode.OFF)
+                .run(args);
+        }
+    
+        @Bean
+        public WebClient webClient(WebClient.Builder builder) {
+            return builder.baseUrl("http://localhost:8080").build();
+        }
+    
+        @Override
+        public void run(ApplicationArguments args) throws Exception {
+    
+            CountDownLatch cdl = new CountDownLatch(2);
+    
+            webClient.get()
+                .uri("/coffee/{id}", 1)
+                .accept(MediaType.APPLICATION_JSON_UTF8)
+                .retrieve()
+                .bodyToMono(Coffee.class)
+                .doOnError(throwable -> log.error("Error:", throwable))
+                .doFinally(signalType -> cdl.countDown())
+                .subscribeOn(Schedulers.single())
+                .subscribe(c -> log.info("Coffee 1:", c));
+    
+            Mono<Coffee> americano =
+                Mono.just(Coffee.builder().name("americano").price(Money.of(CurrencyUnit.of("CNY"), 25.00)).build());
+    
+            webClient.post()
+                .uri("/coffee/")
+                .body(americano, Coffee.class)
+                .retrieve()
+                .bodyToMono(Coffee.class)
+                .doFinally(signalType -> cdl.countDown())
+                .subscribeOn(Schedulers.single())
+                .subscribe(coffee -> log.info("Coffee created :{}", coffee));
+    
+            cdl.await();
+    
+            webClient.get()
+                .uri("/coffee/")
+                .retrieve()
+                .bodyToFlux(Coffee.class)
+                .toStream()
+                .forEach(coffee -> log.info("Coffee in list:{}", coffee));
+    
+        }
+    }
 
 ---
 
