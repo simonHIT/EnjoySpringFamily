@@ -475,7 +475,6 @@
   <img src="images/spring-mvc-explore-06.png" alt="请求处理流程" style="zoom:67%;" />
 
 - ### 一个请求的大致处理流程
-  
 1. 绑定一些 Attribute
   
     - WebApplicationContext / LocaleResolver / ThemeResolver
@@ -524,7 +523,10 @@
 
   - 方法示例
   
+    
+    
     ![Controller](images/spring-mvc-explore-07.png)
+    
     ![Controller](images/spring-mvc-explore-08.png)
 
 ---
@@ -833,21 +835,21 @@ CoffeeController
 
     ```yml
     spring.thymeleaf.cache=true
-
+    
     spring.thymeleaf.check-template=true
-
+    
     spring.thymeleaf.check-template-location=true
-
+    
     spring.thymeleaf.enabled=true
-
+    
     spring.thymeleaf.encoding=UTF-8
-
+    
     spring.thymeleaf.mode=HTML
-
+    
     spring.thymeleaf.servlet.content-type=text/html
-
+    
     spring.thymeleaf.prefix=classpath:/templates/
-
+    
     spring.thymeleaf.suffix=.html
     ```
 
@@ -1134,5 +1136,4 @@ public class PerformanceInteceptor implements HandlerInterceptor {
   - 增加了更多 REST ⽅方法
 
   - 增加了缓存、性能日志与异常处理
-  
 ---
